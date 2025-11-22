@@ -1946,11 +1946,11 @@ class DatabaseManager:
 
             cursor.execute(f"""
                 SELECT
-                    e.id, e.event_type, e.item_code, i.name as item_name,
+                    e.id, e.event_type, e.item_code, i.item_name,
                     e.quantity, i.unit, e.batch_number, e.expiry_date,
                     e.remarks, e.station_id, e.operator, e.timestamp
                 FROM inventory_events e
-                LEFT JOIN items i ON e.item_code = i.code
+                LEFT JOIN items i ON e.item_code = i.item_code
                 WHERE {where_sql}
                 ORDER BY e.timestamp DESC
                 LIMIT ?
