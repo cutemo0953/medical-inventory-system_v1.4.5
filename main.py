@@ -869,8 +869,8 @@ class DatabaseManager:
             """)
             # ========== 聯邦式架構結束 ==========
 
-            # 初始化預設設備
-            self._init_default_equipment(cursor)
+            # 初始化預設設備 - 已停用，改由 profile 系統處理
+            # self._init_default_equipment(cursor)
 
             # 初始化預設醫院和站點（聯邦架構）
             self._init_hospitals_and_stations(cursor)

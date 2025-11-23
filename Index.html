@@ -607,11 +607,11 @@
                                             >
                                             <div x-show="item.showDropdown && item.filteredItems && item.filteredItems.length > 0"
                                                  class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                                <template x-for="availableItem in item.filteredItems.slice(0, 8)" :key="availableItem.code">
+                                                <template x-for="availableItem in item.filteredItems.slice(0, 8)" :key="availableItem.item_code">
                                                     <div @click.stop="selectBatchConsumeItem(index, availableItem)"
                                                          class="px-3 py-2 hover:bg-treatment-50 cursor-pointer text-sm">
-                                                        <span class="font-mono" x-text="availableItem.code"></span> -
-                                                        <span x-text="availableItem.name"></span>
+                                                        <span class="font-mono" x-text="availableItem.item_code"></span> -
+                                                        <span x-text="availableItem.item_name"></span>
                                                         <span class="text-xs text-gray-500" x-text="`(庫存: ${availableItem.current_stock})`"></span>
                                                     </div>
                                                 </template>
@@ -2991,17 +2991,17 @@
                         item.filteredItems = nonMedicineItems;
                     } else {
                         item.filteredItems = nonMedicineItems.filter(i =>
-                            i.code.toLowerCase().includes(searchText) ||
-                            i.name.toLowerCase().includes(searchText)
+                            i.item_code.toLowerCase().includes(searchText) ||
+                            i.item_name.toLowerCase().includes(searchText)
                         );
                     }
                 },
 
                 selectBatchConsumeItem(index, selectedItem) {
                     const item = this.batchConsumeForm.items[index];
-                    item.itemCode = selectedItem.code;
-                    item.itemName = selectedItem.name;
-                    item.searchText = `${selectedItem.code} - ${selectedItem.name}`;
+                    item.itemCode = selectedItem.item_code;
+                    item.itemName = selectedItem.item_name;
+                    item.searchText = `${selectedItem.item_code} - ${selectedItem.item_name}`;
                     item.showDropdown = false;
                 },
 
