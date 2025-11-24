@@ -106,7 +106,16 @@
 </head>
 <body class="min-h-screen">
     <div x-data="medicalInventory()" x-init="init()" x-cloak class="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
-        
+
+        <!-- DEBUG: Always visible status bar -->
+        <div style="position: fixed; top: 0; right: 0; background: yellow; color: black; padding: 10px; z-index: 9999; font-size: 12px; font-family: monospace;">
+            🐛 DEBUG<br>
+            currentTab: <strong x-text="currentTab"></strong><br>
+            bloodInventory: <strong x-text="bloodInventory.length"></strong> items<br>
+            equipment: <strong x-text="equipment.length"></strong> items<br>
+            Tab === 'blood': <strong x-text="currentTab === 'blood' ? 'TRUE' : 'FALSE'"></strong>
+        </div>
+
         <!-- Header -->
         <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 md:p-6 mb-4 sm:mb-6">
             <div class="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
@@ -859,7 +868,8 @@
         </div>
 
         <!-- 血袋分頁 -->
-        <div x-show="currentTab === 'blood'" class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
+        <!-- CHANGED: x-show to style binding to force reactivity -->
+        <div :style="currentTab === 'blood' ? '' : 'display: none !important'" class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
             <!-- DEBUG: Show if this container is visible -->
             <div x-init="console.log('🔍 Blood tab container rendered! currentTab:', currentTab, 'bloodInventory length:', bloodInventory.length)" style="display:none;"></div>
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
@@ -1057,7 +1067,8 @@
                 </div>
             </div>
         </div>
-        <div x-show="currentTab === 'equipment'" class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
+        <!-- CHANGED: x-show to style binding for equipment tab -->
+        <div :style="currentTab === 'equipment' ? '' : 'display: none !important'" class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                 <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                     <svg class="w-6 h-6 text-equipment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
