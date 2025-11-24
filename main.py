@@ -2460,6 +2460,19 @@ async def serve_init_borp():
         raise HTTPException(status_code=404, detail="init_borp_station.html not found")
 
 
+@app.get("/debug.html")
+async def serve_debug():
+    """
+    Serve debug HTML for Alpine.js and API testing
+    """
+    from pathlib import Path
+    debug_file = Path(__file__).parent / "debug.html"
+    if debug_file.exists():
+        return FileResponse(debug_file)
+    else:
+        raise HTTPException(status_code=404, detail="debug.html not found")
+
+
 # 掛載靜態文件（Logo圖片等）
 app.mount("/static", StaticFiles(directory="."), name="static")
 
