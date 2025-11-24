@@ -125,9 +125,11 @@
                             <svg class="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                             </svg>
-                            醫療站庫存系統
+                            <span x-text="stationName || '醫療站庫存系統'"></span>
                         </h1>
-                        <p class="text-xs sm:text-sm text-gray-500">v1.4.5 - Heroicons 重構版</p>
+                        <p class="text-xs sm:text-sm text-gray-500">
+                            <span x-text="stationId"></span> - v1.4.5
+                        </p>
                         <div class="hidden sm:flex items-center gap-2 mt-1 text-xs text-gray-400">
                             <span class="font-medium">Designed in Taiwan</span>
                             <span>•</span>
@@ -139,13 +141,34 @@
                     <!-- Station Selector -->
                     <div class="flex items-center justify-end gap-2">
                         <label class="text-xs text-gray-600">站點:</label>
-                        <select @change="changeStation($event.target.value)"
-                                x-model="stationId"
-                                class="text-xs sm:text-sm px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white font-semibold text-teal-600">
-                            <option value="TC-01">TC-01 - 醫療站</option>
-                            <option value="BORP-01">BORP-01 - 備援手術站</option>
-                            <option value="LOG-HUB">LOG-HUB - 物資中心</option>
-                        </select>
+                        <div class="flex gap-1">
+                            <select :value="showCustomStationInput ? '__CUSTOM__' : stationId"
+                                    @change="handleStationSelectChange($event.target.value)"
+                                    class="text-xs sm:text-sm px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white font-semibold text-teal-600">
+                                <option value="TC-01">TC-01 - 醫療站</option>
+                                <option value="BORP-01">BORP-01 - 備援手術站</option>
+                                <option value="LOG-HUB">LOG-HUB - 物資中心</option>
+                                <option value="__CUSTOM__">其他站點...</option>
+                            </select>
+                            <div x-show="showCustomStationInput" class="flex gap-1" style="display: none;">
+                                <select x-model="customStationType"
+                                        class="text-xs sm:text-sm px-2 py-1 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 bg-white font-semibold text-teal-700">
+                                    <option value="TC">TC-醫療站</option>
+                                    <option value="BORP">BORP-手術站</option>
+                                    <option value="LOG">LOG-物資站</option>
+                                </select>
+                                <input type="text"
+                                       x-model="customStationNumber"
+                                       @keyup.enter="applyCustomStation()"
+                                       placeholder="編號"
+                                       maxlength="3"
+                                       class="text-xs sm:text-sm px-2 py-1 border border-teal-300 rounded-lg focus:ring-2 focus:ring-teal-500 w-16 font-mono text-center">
+                                <button @click="applyCustomStation()"
+                                        class="px-2 py-1 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-xs">
+                                    ✓
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <p class="text-xs text-gray-400">
                         <span x-text="currentTime"></span>
@@ -272,15 +295,6 @@
                     <span class="text-xs sm:text-sm truncate">設備管理</span>
                 </button>
 
-                <!-- 同步管理 - Teal色系（聯邦架構） -->
-                <button @click="switchTab('sync')"
-                        :class="currentTab === 'sync' ? 'bg-teal-custom-500 text-white font-semibold shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                        class="col-span-2 sm:col-span-1 flex-1 py-2.5 sm:py-3 px-2 sm:px-3 md:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 min-w-0">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    <span class="text-xs sm:text-sm truncate">同步管理</span>
-                </button>
             </div>
         </div>
 
@@ -1096,7 +1110,7 @@
 
             <!-- 電氣設備區域 -->
             <div class="bg-gradient-to-br from-equipment-100 to-white border-2 border-equipment-200 rounded-xl p-5 mb-6 shadow-sm">
-                <div class="bg-equipment-900 text-white px-4 py-2 -mx-5 -mt-5 mb-4 rounded-t-xl">
+                <div class="bg-equipment-900 text-white px-6 py-3.5 -mx-5 -mt-5 mb-5 rounded-t-xl">
                     <h3 class="text-lg font-semibold flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -1157,7 +1171,7 @@
 
             <!-- 手術包區域 -->
             <div class="bg-gradient-to-br from-equipment-200 to-white border-2 border-equipment-500 rounded-xl p-5 shadow-sm">
-                <div class="bg-equipment-500 text-white px-4 py-2 -mx-5 -mt-5 mb-4 rounded-t-xl">
+                <div class="bg-equipment-500 text-white px-6 py-3.5 -mx-5 -mt-5 mb-5 rounded-t-xl">
                     <h3 class="text-lg font-semibold flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -1212,7 +1226,7 @@
         <div x-show="showAddItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
             <div @click.away="showAddItemModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
                     新增物品
@@ -1220,15 +1234,15 @@
                 <form @submit.prevent="submitAddItem()" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">物品代碼 (留空自動生成)</label>
-                        <input type="text" x-model="addItemForm.code" placeholder="留空將自動生成" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="text" x-model="addItemForm.code" placeholder="留空將自動生成" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">物品名稱 *</label>
-                        <input type="text" x-model="addItemForm.name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="text" x-model="addItemForm.name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">分類 *</label>
-                        <select x-model="addItemForm.category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <select x-model="addItemForm.category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             <option value="手術耗材">手術耗材</option>
                             <option value="急救物資">急救物資</option>
                             <option value="藥品">藥品</option>
@@ -1239,14 +1253,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">單位</label>
-                        <input type="text" x-model="addItemForm.unit" placeholder="EA" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="text" x-model="addItemForm.unit" placeholder="EA" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">最小庫存</label>
-                        <input type="number" x-model="addItemForm.minStock" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="number" x-model="addItemForm.minStock" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div class="flex gap-4">
-                        <button type="submit" class="flex-1 bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700 transition-colors flex items-center justify-center gap-2">
+                        <button type="submit" class="flex-1 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
@@ -1267,7 +1281,7 @@
         <div x-show="showEditItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
             <div @click.away="showEditItemModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                     編輯物品
@@ -1279,11 +1293,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">物品名稱 *</label>
-                        <input type="text" x-model="editItemForm.name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="text" x-model="editItemForm.name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">分類 *</label>
-                        <select x-model="editItemForm.category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <select x-model="editItemForm.category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             <option value="手術耗材">手術耗材</option>
                             <option value="急救物資">急救物資</option>
                             <option value="藥品">藥品</option>
@@ -1294,14 +1308,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">單位</label>
-                        <input type="text" x-model="editItemForm.unit" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="text" x-model="editItemForm.unit" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">最小庫存</label>
-                        <input type="number" x-model="editItemForm.minStock" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500">
+                        <input type="number" x-model="editItemForm.minStock" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                     </div>
                     <div class="flex gap-4">
-                        <button type="submit" class="flex-1 bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700 transition-colors flex items-center justify-center gap-2">
+                        <button type="submit" class="flex-1 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
@@ -1995,203 +2009,6 @@
             </div>
         </div>
 
-        <!-- 同步管理分頁 (聯邦架構 Phase 1-2) -->
-        <div x-show="currentTab === 'sync'" class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-teal-custom-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    同步管理
-                </h2>
-                <div class="text-sm text-gray-600">
-                    <span class="font-semibold">站點:</span> <span x-text="stationId"></span> |
-                    <span class="font-semibold">醫院:</span> HOSP-001
-                </div>
-            </div>
-
-            <!-- 站點資訊卡片 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-teal-variant-100 border-2 border-teal-variant-500 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">待同步變更</p>
-                            <p class="text-2xl font-bold text-teal-variant-700" x-text="syncStats.pendingChanges"></p>
-                        </div>
-                        <svg class="w-10 h-10 text-teal-variant-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">已同步封包</p>
-                            <p class="text-2xl font-bold text-gray-700" x-text="syncStats.syncedPackages"></p>
-                        </div>
-                        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="bg-teal-variant-100 border-2 border-teal-variant-600 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">上次同步</p>
-                            <p class="text-sm font-semibold text-teal-variant-800" x-text="syncStats.lastSync || '尚未同步'"></p>
-                        </div>
-                        <svg class="w-10 h-10 text-teal-variant-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 產生同步封包區塊 -->
-            <div class="bg-teal-variant-100 border-2 border-teal-variant-600 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-teal-variant-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    產生同步封包
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">同步類型</label>
-                        <select x-model="syncPackageForm.syncType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-variant-700">
-                            <option value="DELTA">增量同步 (DELTA)</option>
-                            <option value="FULL">全量同步 (FULL)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">起始時間 (增量用)</label>
-                        <input type="datetime-local" x-model="syncPackageForm.sinceTimestamp" :disabled="syncPackageForm.syncType === 'FULL'" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-variant-700 disabled:bg-gray-100">
-                    </div>
-                    <div class="flex items-end">
-                        <button @click="generateSyncPackage()" class="w-full bg-teal-variant-700 text-white px-4 py-2 rounded-lg hover:bg-teal-variant-800 transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            產生封包
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 產生的封包資訊 -->
-                <div x-show="generatedPackage" class="mt-4 bg-white border-2 border-teal-variant-500 rounded-lg p-4">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <h4 class="font-bold text-gray-800 mb-2">封包資訊</h4>
-                            <div class="text-sm space-y-1">
-                                <p><span class="font-semibold">封包ID:</span> <span x-text="generatedPackage?.package_id" class="text-teal-variant-700 font-mono text-xs"></span></p>
-                                <p><span class="font-semibold">類型:</span> <span x-text="generatedPackage?.package_type"></span></p>
-                                <p><span class="font-semibold">變更數:</span> <span x-text="generatedPackage?.changes_count"></span> 項</p>
-                                <p><span class="font-semibold">大小:</span> <span x-text="formatBytes(generatedPackage?.package_size)"></span></p>
-                                <p><span class="font-semibold">校驗碼:</span> <span x-text="generatedPackage?.checksum?.substring(0, 16) + '...'" class="text-xs font-mono"></span></p>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click="downloadSyncPackage()" class="bg-gray-600 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                </svg>
-                                下載 JSON
-                            </button>
-                            <button @click="copySyncPackage()" class="bg-gray-500 text-white px-3 py-1.5 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-1.5 text-sm">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                </svg>
-                                複製
-                            </button>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 border border-gray-200 rounded p-2 overflow-auto max-h-40">
-                        <pre class="text-xs font-mono" x-text="JSON.stringify(generatedPackage, null, 2)"></pre>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 匯入同步封包區塊 -->
-            <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-teal-variant-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                    </svg>
-                    匯入同步封包
-                </h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">選擇同步封包檔案 (JSON)</label>
-                        <input type="file" @change="handleSyncFileUpload($event)" accept=".json" class="w-full px-4 py-2 border-2 border-dashed border-teal-variant-500 rounded-lg focus:border-teal-variant-700 bg-white">
-                    </div>
-                    <div class="flex gap-3">
-                        <button @click="importSyncPackage()" :disabled="!uploadedPackage" class="flex-1 bg-teal-variant-700 text-white px-4 py-2 rounded-lg hover:bg-teal-variant-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                            </svg>
-                            匯入封包
-                        </button>
-                        <button @click="clearUploadedPackage()" :disabled="!uploadedPackage" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
-                            清除
-                        </button>
-                    </div>
-
-                    <!-- 上傳的封包預覽 -->
-                    <div x-show="uploadedPackage" class="bg-white border-2 border-teal-variant-500 rounded-lg p-4">
-                        <h4 class="font-bold text-gray-800 mb-2">已上傳封包</h4>
-                        <div class="text-sm space-y-1 mb-3">
-                            <p><span class="font-semibold">封包ID:</span> <span x-text="uploadedPackage?.packageId" class="text-teal-variant-700 font-mono text-xs"></span></p>
-                            <p><span class="font-semibold">變更數:</span> <span x-text="uploadedPackage?.changes?.length"></span> 項</p>
-                            <p><span class="font-semibold">校驗碼:</span> <span x-text="uploadedPackage?.checksum?.substring(0, 16) + '...'" class="text-xs font-mono"></span></p>
-                        </div>
-                    </div>
-
-                    <!-- 匯入結果 -->
-                    <div x-show="importResult" class="rounded-lg p-4" :class="importResult?.success ? 'bg-green-50 border-2 border-green-300' : 'bg-red-50 border-2 border-red-300'">
-                        <h4 class="font-bold mb-2" :class="importResult?.success ? 'text-green-800' : 'text-red-800'">
-                            <span x-show="importResult?.success">✓ 匯入成功</span>
-                            <span x-show="!importResult?.success">✗ 匯入失敗</span>
-                        </h4>
-                        <div class="text-sm space-y-1">
-                            <p x-show="importResult?.changes_applied"><span class="font-semibold">套用變更:</span> <span x-text="importResult?.changes_applied"></span> 項</p>
-                            <p x-show="importResult?.conflicts_detected"><span class="font-semibold">衝突:</span> <span x-text="importResult?.conflicts_detected"></span> 項</p>
-                            <p><span class="font-semibold">訊息:</span> <span x-text="importResult?.message"></span></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 同步狀態說明 -->
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    同步說明
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-gray-600">
-                    <div>
-                        <p class="font-semibold mb-1">📦 產生封包：</p>
-                        <ul class="list-disc list-inside space-y-0.5 ml-2">
-                            <li><strong>增量同步</strong>：僅包含指定時間後的變更</li>
-                            <li><strong>全量同步</strong>：包含所有資料</li>
-                            <li>產生後可下載為 JSON 檔案</li>
-                            <li>透過 USB 實體轉移到醫院層</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <p class="font-semibold mb-1">📥 匯入封包：</p>
-                        <ul class="list-disc list-inside space-y-0.5 ml-2">
-                            <li>上傳從醫院層收到的封包</li>
-                            <li>自動驗證 SHA-256 校驗碼</li>
-                            <li>檢測並記錄資料衝突</li>
-                            <li>更新本站點資料</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Toast 通知 -->
         <div x-show="showToast" x-transition class="fixed bottom-4 right-4 z-50" style="display: none;">
             <div :class="{
@@ -2468,6 +2285,9 @@
                 stationId: localStorage.getItem('stationId') || 'TC-01',
                 stationName: localStorage.getItem('stationName') || '前線醫療站',
                 stationType: localStorage.getItem('stationType') || '',
+                showCustomStationInput: false,
+                customStationType: 'TC',
+                customStationNumber: '',
                 currentTab: 'items',
                 treatmentMode: 'surgery', // 處置標籤頁模式: 'surgery' 或 'consume'
                 currentTime: '',
@@ -2586,7 +2406,8 @@
                     name: '',
                     category: '其他',
                     quantity: 1,
-                    remarks: ''
+                    remarks: '',
+                    stationId: localStorage.getItem('stationId') || 'TC-01'
                 },
                 editEquipmentForm: {
                     id: '',
@@ -2757,45 +2578,70 @@
                     // If same station, do nothing
                     if (newStationId === this.stationId) return;
 
-                    // Confirm station switch
-                    const stationNames = {
-                        'TC-01': '醫療站 TC-01',
-                        'BORP-01': 'BORP 備援手術站',
-                        'LOG-HUB': '壯闊台灣物資中心'
-                    };
-                    const targetName = stationNames[newStationId] || newStationId;
+                    // Store old station for rollback
+                    const oldStationId = this.stationId;
 
+                    // Infer station type and name from ID
+                    const getStationInfo = (stationId) => {
+                        // Hardcoded mappings for common stations
+                        const hardcoded = {
+                            'TC-01': { name: '醫療站 TC-01', type: 'health_center' },
+                            'BORP-01': { name: 'BORP 備援手術站', type: 'surgical_station' },
+                            'LOG-HUB': { name: '物資中心 LOG-HUB', type: 'logistics_hub' }
+                        };
+
+                        if (hardcoded[stationId]) {
+                            return hardcoded[stationId];
+                        }
+
+                        // Parse prefix for custom stations
+                        let type, name;
+                        if (stationId.startsWith('TC-')) {
+                            type = 'health_center';
+                            name = `醫療站 ${stationId}`;
+                        } else if (stationId.startsWith('BORP-')) {
+                            type = 'surgical_station';
+                            name = `BORP 備援手術站 ${stationId}`;
+                        } else if (stationId.startsWith('LOG-')) {
+                            type = 'logistics_hub';
+                            name = `物資中心 ${stationId}`;
+                        } else {
+                            // Unknown type - use generic
+                            type = 'custom';
+                            name = stationId;
+                        }
+
+                        return { name, type };
+                    };
+
+                    const oldInfo = getStationInfo(oldStationId);
+                    const newInfo = getStationInfo(newStationId);
+
+                    // Confirm station switch
                     const confirmed = confirm(
-                        `確定要切換至「${targetName}」嗎？\n\n` +
+                        `確定要切換至「${newInfo.name}」嗎？\n\n` +
                         `📌 重要說明：\n` +
                         `• 切換站點後，您將只能看到該站點的資料\n` +
                         `• 各站點的資料都保存在資料庫中，不會被刪除\n` +
-                        `• 在 ${this.stationName} 新增的資料仍屬於 ${this.stationName}\n` +
+                        `• 在 ${oldInfo.name} 新增的資料仍屬於 ${oldInfo.name}\n` +
                         `• 切換回原站點時，資料仍會在那裡\n\n` +
                         `是否繼續切換？`
                     );
 
                     if (!confirmed) {
-                        // Reset select to current station
-                        this.$nextTick(() => {
-                            this.stationId = this.stationId; // Force re-render
-                        });
+                        // Reset select element back to old station
+                        if (typeof event !== 'undefined' && event.target) {
+                            event.target.value = oldStationId;
+                        }
                         return;
                     }
 
-                    const oldStationId = this.stationId;
+                    // Update station
                     this.stationId = newStationId;
+                    this.stationName = newInfo.name;
+                    this.stationType = newInfo.type;
+
                     localStorage.setItem('stationId', newStationId);
-
-                    const stationTypes = {
-                        'TC-01': 'health_center',
-                        'BORP-01': 'surgical_station',
-                        'LOG-HUB': 'logistics_hub'
-                    };
-
-                    this.stationName = targetName;
-                    this.stationType = stationTypes[newStationId] || '';
-
                     localStorage.setItem('stationName', this.stationName);
                     localStorage.setItem('stationType', this.stationType);
 
@@ -2812,7 +2658,59 @@
                     await this.loadStats();
                     await this.lazyLoadTabData(this.currentTab);
 
-                    this.toast(`已從 ${stationNames[oldStationId]} 切換至 ${this.stationName}`, 'info');
+                    this.toast(`已從 ${oldInfo.name} 切換至 ${this.stationName}`, 'info');
+                },
+
+                // 處理站點選擇變更
+                handleStationSelectChange(value) {
+                    if (value === '__CUSTOM__') {
+                        this.showCustomStationInput = true;
+                        this.customStationType = 'TC';
+                        this.customStationNumber = '';
+                        // Auto-focus the input after it appears
+                        this.$nextTick(() => {
+                            const input = document.querySelector('input[x-model="customStationNumber"]');
+                            if (input) input.focus();
+                        });
+                    } else {
+                        this.showCustomStationInput = false;
+                        this.changeStation(value);
+                    }
+                },
+
+                // 應用自訂站點ID
+                applyCustomStation() {
+                    if (!this.customStationNumber || !this.customStationNumber.trim()) {
+                        this.toast('請輸入站點編號', 'error');
+                        return;
+                    }
+
+                    // Validate number format (digits only, padded with leading zeros)
+                    const number = this.customStationNumber.trim();
+                    if (!/^\d+$/.test(number)) {
+                        this.toast('編號只能包含數字', 'error');
+                        return;
+                    }
+
+                    // Pad number with leading zeros to 2 digits
+                    const paddedNumber = number.padStart(2, '0');
+
+                    // Generate station ID based on type
+                    let stationId;
+                    if (this.customStationType === 'LOG') {
+                        // LOG stations use different format: LOG-XXX or LOG-HUB
+                        if (paddedNumber === '01') {
+                            stationId = 'LOG-HUB'; // Special case for main hub
+                        } else {
+                            stationId = `LOG-${paddedNumber}`;
+                        }
+                    } else {
+                        stationId = `${this.customStationType}-${paddedNumber}`;
+                    }
+
+                    this.showCustomStationInput = false;
+                    this.customStationNumber = '';
+                    this.changeStation(stationId);
                 },
 
                 // 確保items已載入 (用於搜尋耗材功能)
@@ -3519,11 +3417,11 @@
                 // 設備管理
                 async loadEquipment() {
                     try {
-                        const response = await fetch(`${this.apiUrl}/equipment`);
+                        const response = await fetch(`${this.apiUrl}/equipment?station_id=${this.stationId}`);
                         if (response.ok) {
                             const data = await response.json();
                             this.equipment = data.equipment;
-                            console.log('✓ 設備已載入:', this.equipment.length, '項');
+                            console.log('✓ 設備已載入:', this.equipment.length, '項', `(站點: ${this.stationId})`);
                             // 重新載入統計數據以更新待檢查設備數量
                             await this.loadStats();
                             this.toast('設備列表已更新', 'success');
@@ -3539,10 +3437,16 @@
 
                 async submitAddEquipment() {
                     try {
+                        // Ensure station_id is set
+                        const equipmentData = {
+                            ...this.addEquipmentForm,
+                            station_id: this.stationId
+                        };
+
                         const response = await fetch(`${this.apiUrl}/equipment`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.addEquipmentForm)
+                            body: JSON.stringify(equipmentData)
                         });
                         
                         const data = await response.json();

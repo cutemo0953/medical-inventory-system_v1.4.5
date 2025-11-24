@@ -1866,20 +1866,30 @@ class DatabaseManager:
         finally:
             conn.close()
 
-    def get_equipment_status(self) -> List[Dict[str, Any]]:
+    def get_equipment_status(self, station_id: str = None) -> List[Dict[str, Any]]:
         """取得所有設備狀態"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
+
         try:
-            cursor.execute("""
-                SELECT 
-                    id, name, category, quantity, status,
-                    last_check, power_level, remarks
-                FROM equipment
-                ORDER BY name
-            """)
-            
+            if station_id:
+                cursor.execute("""
+                    SELECT
+                        id, name, category, quantity, status,
+                        last_check, power_level, remarks, station_id
+                    FROM equipment
+                    WHERE station_id = ?
+                    ORDER BY name
+                """, (station_id,))
+            else:
+                cursor.execute("""
+                    SELECT
+                        id, name, category, quantity, status,
+                        last_check, power_level, remarks, station_id
+                    FROM equipment
+                    ORDER BY name
+                """)
+
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
@@ -3200,19 +3210,19 @@ async def transfer_blood(request: BloodTransferRequest):
 # ========== 設備管理 API ==========
 
 @app.get("/api/equipment/status")
-async def get_equipment_status():
+async def get_equipment_status(station_id: str = None):
     """取得所有設備狀態"""
     try:
-        status = db.get_equipment_status()
+        status = db.get_equipment_status(station_id)
         return {"equipment": status, "count": len(status)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/equipment")
-async def get_equipment():
+async def get_equipment(station_id: str = None):
     """取得所有設備"""
-    return await get_equipment_status()
+    return await get_equipment_status(station_id)
 
 
 @app.post("/api/equipment/check/{equipment_id}")
