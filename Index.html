@@ -1133,7 +1133,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="eq in equipment.filter(e => !e.id.startsWith('SURG-'))" :key="eq.id">
+                            <template x-for="eq in equipment.filter(e => !e.id.includes('-SURG-') && !e.id.startsWith('SURG-'))" :key="eq.id">
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900" x-text="eq.id"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900" x-text="eq.name"></td>
@@ -1192,7 +1192,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="eq in equipment.filter(e => e.id.startsWith('SURG-'))" :key="eq.id">
+                            <template x-for="eq in equipment.filter(e => e.id.includes('-SURG-') || e.id.startsWith('SURG-'))" :key="eq.id">
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900" x-text="eq.id"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900" x-text="eq.name"></td>
@@ -1213,7 +1213,7 @@
                                     </td>
                                 </tr>
                             </template>
-                            <tr x-show="equipment.filter(e => e.id.startsWith('SURG-')).length === 0">
+                            <tr x-show="equipment.filter(e => e.id.includes('-SURG-') || e.id.startsWith('SURG-')).length === 0">
                                 <td colspan="6" class="px-6 py-8 text-center text-gray-400">目前沒有手術包</td>
                             </tr>
                         </tbody>
@@ -2560,6 +2560,11 @@
                     if (tab === 'surgery' && !this.dataLoaded.surgery) {
                         await this.loadSurgeryRecords();
                         this.dataLoaded.surgery = true;
+                    }
+                    if (tab === 'treatment' && !this.dataLoaded.items) {
+                        // 處置標籤需要物品資料 (用於消耗品項搜尋)
+                        await this.loadItems();
+                        this.dataLoaded.items = true;
                     }
                     if (tab === 'dispense' && !this.dataLoaded.dispense) {
                         await this.loadPendingDispenses();

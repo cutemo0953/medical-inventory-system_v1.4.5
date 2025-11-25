@@ -85,7 +85,40 @@ INSERT INTO equipment (id, name, category, quantity, status, remarks) VALUES
 -- Material Handling
 ('LOG-FORK-1', '堆高機', '搬運設備', 2, 'UNCHECKED', 'Logistics Hub'),
 ('LOG-PALLET-1', '手動托板車', '搬運設備', 5, 'UNCHECKED', 'Logistics Hub'),
-('LOG-SHELF-1', '貨架系統', '儲存設備', 20, 'UNCHECKED', 'Logistics Hub');
+('LOG-SHELF-1', '貨架系統', '儲存設備', 20, 'UNCHECKED', 'Logistics Hub'),
+
+-- ============================================================================
+-- Surgical Instruments - FOR CIRCULATION TO BORP STATIONS
+-- Higher quantities for backup/redistribution purposes
+-- ============================================================================
+
+-- Orthopedic Instruments
+('LOG-SURG-ORTHO-01', '骨科包', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-DRILL-01', '顱骨手搖鑽', '手術器械', 2, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-DRILL-02', '鑽/切骨電動工具組', '手術器械', 2, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-DRILL-03', '電池式電動骨鑽', '手術器械', 2, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-SAW-01', '電池式電動骨鋸', '手術器械', 6, 'UNCHECKED', '物資中繼站備援庫存'),
+
+-- Airway & Vascular Instruments
+('LOG-SURG-TRACH-01', '氣切輔助包', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-CLAMP-01', 'Bull dog血管夾', '手術器械', 8, 'UNCHECKED', '物資中繼站備援庫存'),
+
+-- General Surgical Packs
+('LOG-SURG-BASIC-01', '共同基本包（一）', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-BASIC-02', '共同基本包（二）', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+
+-- Abdominal Surgery Instruments
+('LOG-SURG-ABD-01', '開腹輔助包', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-RETRACT-01', '腹部開創器', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+
+-- Thoracic & Cardiovascular Instruments
+('LOG-SURG-THORAX-01', '開胸基本包', '手術器械', 2, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-VASC-01', '血管包', '手術器械', 6, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-CARDIAC-01', '心外基本包', '手術器械', 8, 'UNCHECKED', '物資中繼站備援庫存'),
+
+-- Specialty Packs
+('LOG-SURG-ASSET-01', 'ASSET包', '手術器械', 16, 'UNCHECKED', '物資中繼站備援庫存'),
+('LOG-SURG-SUTURE-01', '皮膚縫合包', '手術器械', 4, 'UNCHECKED', '物資中繼站備援庫存');
 
 -- ============================================================================
 -- Consumable Items - BULK STORAGE (Larger Quantities)

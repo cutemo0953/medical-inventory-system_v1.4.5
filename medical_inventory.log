@@ -1340,3 +1340,5 @@ sqlite3.OperationalError: no such table: equipment
 2025-11-25 10:23:40,672 - __main__ - ERROR - 緊急領用失敗: table dispense_records has no column named medicine_name
 2025-11-25 10:36:34,283 - __main__ - INFO - 📋 正常領用請求建立: 藥品=Advil, 數量=3, 領用人=王小花
 2025-11-25 10:37:48,761 - __main__ - INFO - ✅ 領用審核通過: ID=1, 審核人=藥師-林大華
+2025-11-25 10:46:14,109 - __main__ - INFO - 設備檢查記錄成功: TC-WATER-01 - NORMAL
+2025-11-25 10:46:47,903 - __main__ - INFO - 設備檢查記錄成功: TC-POWER-01 - NORMAL
