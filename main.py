@@ -1370,6 +1370,8 @@ class DatabaseManager:
             total_items = cursor.fetchone()['count']
 
             # 庫存警戒數（依站點過濾）
+            # 短期方案：使用 INNER JOIN 只統計有進貨記錄的品項
+            # v2.0 multi-station 將改為 LEFT JOIN + 自動初始化 + 設置精靈
             if station_id:
                 cursor.execute("""
                     SELECT COUNT(*) as count
@@ -1377,9 +1379,9 @@ class DatabaseManager:
                         SELECT
                             i.item_code,
                             i.min_stock,
-                            COALESCE(stock.current_stock, 0) as current_stock
+                            stock.current_stock
                         FROM items i
-                        LEFT JOIN (
+                        INNER JOIN (
                             SELECT item_code,
                                    SUM(CASE WHEN event_type = 'RECEIVE' THEN quantity
                                             WHEN event_type = 'CONSUME' THEN -quantity
