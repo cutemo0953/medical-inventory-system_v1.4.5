@@ -1471,10 +1471,10 @@ class DatabaseManager:
             
             conn.commit()
             logger.info(f"進貨記錄成功: {request.itemCode} +{request.quantity}")
-            
+
             return {
                 "success": True,
-                "message": f"物品 {item['name']} 進貨 {request.quantity} 已記錄"
+                "message": f"物品 {item['item_name']} 進貨 {request.quantity} 已記錄"
             }
         
         except HTTPException:
@@ -1528,10 +1528,10 @@ class DatabaseManager:
             
             conn.commit()
             logger.info(f"消耗記錄成功: {request.itemCode} -{request.quantity}")
-            
+
             return {
                 "success": True,
-                "message": f"物品 {item['name']} 消耗 {request.quantity} 已記錄"
+                "message": f"物品 {item['item_name']} 消耗 {request.quantity} 已記錄"
             }
         
         except HTTPException:
