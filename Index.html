@@ -204,7 +204,17 @@
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs text-gray-500 truncate">庫存警戒</p>
+                        <div class="flex items-center gap-1">
+                            <p class="text-xs text-gray-500 truncate">庫存警戒</p>
+                            <div class="group relative cursor-help">
+                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="invisible group-hover:visible absolute bottom-full left-0 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap z-50">
+                                    僅統計有進貨記錄的品項
+                                </div>
+                            </div>
+                        </div>
                         <p class="text-lg font-bold text-gray-700" x-text="stats.lowStockItems"></p>
                     </div>
                 </div>
@@ -606,7 +616,7 @@
                                 </svg>
                                 消耗品項
                             </h4>
-                            <button type="button" @click="addBatchConsumeItem()"
+                            <button type="button" @click="ensureItemsLoaded(); addBatchConsumeItem()"
                                     class="bg-treatment-500 text-white px-3 py-1 rounded-lg hover:bg-[#3d4270] text-sm flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -3144,17 +3154,29 @@
 
                 filterBatchConsumeItems(index) {
                     const item = this.batchConsumeForm.items[index];
-                    const searchText = item.searchText.toLowerCase();
+                    if (!item) return;
+
+                    const searchText = (item.searchText || '').toLowerCase();
+
+                    // 確保 items 已載入且有資料
+                    if (!this.items || this.items.length === 0) {
+                        item.filteredItems = [];
+                        return;
+                    }
 
                     // 排除藥品 (medicines) - 藥品應該透過藥品領用流程
-                    const nonMedicineItems = this.items.filter(i => i.category !== '藥品');
+                    // 加入檢查確保每個元素都有必要的屬性
+                    const nonMedicineItems = this.items.filter(i =>
+                        i && i.category && i.category !== '藥品'
+                    );
 
                     if (!searchText) {
                         item.filteredItems = nonMedicineItems;
                     } else {
                         item.filteredItems = nonMedicineItems.filter(i =>
-                            i.item_code.toLowerCase().includes(searchText) ||
-                            i.item_name.toLowerCase().includes(searchText)
+                            i && i.item_code && i.item_name &&
+                            (i.item_code.toLowerCase().includes(searchText) ||
+                             i.item_name.toLowerCase().includes(searchText))
                         );
                     }
                 },
