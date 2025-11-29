@@ -1921,23 +1921,14 @@ class DatabaseManager:
         cursor = conn.cursor()
 
         try:
-            if station_id:
-                cursor.execute("""
-                    SELECT
-                        id, name, category, quantity, status,
-                        last_check, power_level, remarks, station_id
-                    FROM equipment
-                    WHERE station_id = ?
-                    ORDER BY name
-                """, (station_id,))
-            else:
-                cursor.execute("""
-                    SELECT
-                        id, name, category, quantity, status,
-                        last_check, power_level, remarks, station_id
-                    FROM equipment
-                    ORDER BY name
-                """)
+            # v1.4.5 單站版本：equipment 表無 station_id 欄位
+            cursor.execute("""
+                SELECT
+                    id, name, category, quantity, status,
+                    last_check, power_level, remarks
+                FROM equipment
+                ORDER BY name
+            """)
 
             return [dict(row) for row in cursor.fetchall()]
         finally:
