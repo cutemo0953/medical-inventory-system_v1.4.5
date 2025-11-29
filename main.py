@@ -4151,7 +4151,7 @@ async def get_emergency_info():
 
 @app.get("/emergency/view")
 async def view_emergency_info():
-    """緊急資訊顯示頁面（QR Code掃描後跳轉）"""
+    """緊急資訊顯示頁面 (QR Code掃描後跳轉）"""
     try:
         stats = db.get_stats()
         blood_inventory = db.get_blood_inventory()
@@ -4409,7 +4409,7 @@ async def emergency_qr_code(request: Request):
     - 設備狀態
     """
     try:
-        # 獲取請求的主機名稱（支持手機掃描）
+        # 獲取請求的主機名稱 (支持手機掃描）
         # 優先使用環境變數，否則使用請求的 Host header
         host = config.BASE_URL if hasattr(config, 'BASE_URL') and config.BASE_URL else request.headers.get("host", "localhost:8000")
         protocol = "https" if request.url.scheme == "https" else "http"
@@ -4502,7 +4502,7 @@ async def import_station_sync_package(request: SyncPackageUpload):
     """
     【站點層】匯入同步封包
 
-    站點匯入從醫院層收到的同步封包（通常包含其他站點的更新）
+    站點匯入從醫院層收到的同步封包 (通常包含其他站點的更新）
 
     參數:
     - stationId: 站點ID
@@ -4582,7 +4582,7 @@ async def upload_hospital_sync(request: SyncPackageUpload):
     """
     【醫院層】接收站點同步上傳
 
-    醫院層接收站點上傳的同步封包（谷盺公司使用）
+    醫院層接收站點上傳的同步封包 (谷盺公司使用）
 
     參數:
     - stationId: 站點ID
@@ -4592,7 +4592,7 @@ async def upload_hospital_sync(request: SyncPackageUpload):
 
     返回:
     - changes_applied: 成功套用的變更數
-    - response_package_id: 回傳封包ID（包含其他站點更新）
+    - response_package_id: 回傳封包ID (包含其他站點更新）
     """
     try:
         logger.info(f"醫院層接收同步上傳: station={request.stationId}, package={request.packageId}")
@@ -4667,7 +4667,7 @@ async def coordinate_hospital_transfer(request: HospitalTransferCoordinate):
     """
     【醫院層】院內調撥協調 (Phase 2)
 
-    醫院層協調站點間物資調撥（谷盺公司使用）
+    醫院層協調站點間物資調撥 (谷盺公司使用）
 
     參數:
     - hospitalId: 醫院ID
@@ -4923,10 +4923,10 @@ if __name__ == "__main__":
     print(f"📊 健康檢查: http://localhost:8000/api/health")
     print("=" * 70)
     print("✨ v1.4.5 新功能:")
-    print("   - UI 全面重構（Heroicons + 新色系）")
-    print("   - 處置標籤頁整合（手術記錄 + 一般消耗）")
-    print("   - 血庫管理增強（病患資訊 + 歷史記錄）")
-    print("   - 設備自動刷新機制（每日 07:00am）")
+    print("   - UI 全面重構 (Heroicons + 新色系）")
+    print("   - 處置標籤頁整合 (手術記錄 + 一般消耗）")
+    print("   - 血庫管理增強 (病患資訊 + 歷史記錄）")
+    print("   - 設備自動刷新機制 (每日 07:00am）")
     print("   - 響應式設計優化")
     print("=" * 70)
     print("按 Ctrl+C 停止服務")
