@@ -130,16 +130,13 @@ INSERT INTO items (item_code, item_name, item_category, category, unit, current_
 -- ============================================================================
 -- Blood Inventory Initialization (BORP starts with emergency supply)
 -- ============================================================================
+-- 注意：血袋庫存不再預載，請在設定精靈完成後，透過「血庫管理」功能手動入庫
+-- 建議初始數量（可依實際需求調整）：
+--   A+: 10U, A-: 5U, B+: 10U, B-: 5U
+--   O+: 15U, O-: 10U, AB+: 5U, AB-: 3U
+--   總計：63U
 
-INSERT OR REPLACE INTO blood_inventory (blood_type, quantity, station_id) VALUES
-('A+', 10, 'BORP-01'),
-('A-', 5, 'BORP-01'),
-('B+', 10, 'BORP-01'),
-('B-', 5, 'BORP-01'),
-('O+', 15, 'BORP-01'),
-('O-', 10, 'BORP-01'),
-('AB+', 5, 'BORP-01'),
-('AB-', 3, 'BORP-01');
+-- 血袋庫存將在首次使用時透過 UI 建立，自動綁定正確的站點 ID
 
 -- ============================================================================
 -- Profile Metadata
