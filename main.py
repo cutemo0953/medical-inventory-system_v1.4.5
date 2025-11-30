@@ -74,11 +74,40 @@ class Config:
     """系統配置"""
     VERSION = "1.4.5"
     DATABASE_PATH = "medical_inventory.db"
-    STATION_ID = "HC-000000"
+    STATION_ID = "HC-000000"  # 預設值，啟動時會自動更新
     DEBUG = True
 
     # 血型列表
     BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
+
+    @classmethod
+    def load_station_id_from_db(cls):
+        """從資料庫載入實際的站點 ID（排除預設的 HC-000000）"""
+        try:
+            conn = sqlite3.connect(cls.DATABASE_PATH)
+            cursor = conn.cursor()
+
+            # 優先讀取非預設站點（排除 HC-000000）
+            cursor.execute("""
+                SELECT station_code FROM station_metadata
+                WHERE station_code != 'HC-000000'
+                ORDER BY created_at DESC LIMIT 1
+            """)
+            result = cursor.fetchone()
+
+            if result:
+                cls.STATION_ID = result[0]
+                logger.info(f"✓ 已載入站點 ID: {cls.STATION_ID}")
+            else:
+                # 如果沒有其他站點，使用預設站點
+                logger.info(f"使用預設站點 ID: {cls.STATION_ID}")
+
+            conn.close()
+        except sqlite3.OperationalError:
+            # 資料庫表還不存在，使用預設值
+            logger.info(f"資料庫初始化中，使用預設站點 ID: {cls.STATION_ID}")
+        except Exception as e:
+            logger.warning(f"載入站點 ID 失敗: {e}，使用預設值: {cls.STATION_ID}")
 
 config = Config()
 
@@ -4931,6 +4960,9 @@ async def setup_station(request: SetupStationRequest):
 # ============================================================================
 
 if __name__ == "__main__":
+    # 從資料庫載入實際的站點 ID
+    config.load_station_id_from_db()
+
     print("=" * 70)
     print(f"🏥 醫療站庫存管理系統 API v{config.VERSION}")
     print("=" * 70)
