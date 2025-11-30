@@ -4955,6 +4955,34 @@ async def setup_station(request: SetupStationRequest):
         )
 
 
+@app.post("/api/setup/reload-config")
+async def reload_config():
+    """
+    重新載入站點配置 - Setup Wizard 完成後調用
+
+    當設定精靈完成站點配置後，重新從資料庫載入站點 ID，
+    確保後端使用正確的站點資訊過濾資料
+    """
+    try:
+        # 重新載入站點 ID
+        config.load_station_id_from_db()
+
+        logger.info(f"✓ 配置已重新載入，當前站點 ID: {config.STATION_ID}")
+
+        return {
+            "success": True,
+            "station_id": config.STATION_ID,
+            "message": "站點配置已重新載入"
+        }
+
+    except Exception as e:
+        logger.error(f"重新載入配置失敗: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"重新載入配置失敗: {str(e)}"
+        )
+
+
 # ============================================================================
 # 啟動
 # ============================================================================

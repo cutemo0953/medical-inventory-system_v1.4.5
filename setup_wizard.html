@@ -551,6 +551,19 @@
                                 station_type: this.selectedType
                             })
                         });
+
+                        // Reload backend config to sync station ID
+                        const reloadRes = await fetch('/api/setup/reload-config', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const reloadData = await reloadRes.json();
+
+                        if (reloadData.success) {
+                            // Update localStorage with backend-confirmed station ID
+                            localStorage.setItem('stationId', reloadData.station_id);
+                            console.log('✓ 站點配置已同步，站點 ID:', reloadData.station_id);
+                        }
                     } catch (error) {
                         console.error('Failed to save station info:', error);
                     }
