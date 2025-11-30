@@ -1,14 +1,15 @@
 # 醫療站庫存管理系統 v1.4.5
 # Python 依賴套件清單
+# 支援 Python 3.11, 3.12, 3.13
 
-# Web Framework
-fastapi==0.104.1
+# Web Framework (Python 3.13 compatible)
+fastapi>=0.115.0
 
 # ASGI Server
 uvicorn[standard]==0.24.0
 
-# 資料驗證
-pydantic==2.5.0
+# 資料驗證 (Python 3.13 compatible)
+pydantic>=2.8.0
 
 # PDF 生成 (v1.4.5新增)
 reportlab>=4.0.0
