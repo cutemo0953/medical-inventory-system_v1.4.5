@@ -3044,13 +3044,32 @@ async def get_blood_batch_label(
     station_id: str = Query("HC-000000", description="站點ID"),
     remarks: str = Query("", description="批號或備註")
 ):
-    """取得一般血袋批次標籤 (HTML) - 用於列印"""
+    """取得一般血袋批次標籤 (HTML) - 用於列印 - 每1U一張標籤"""
     try:
         from datetime import datetime
 
-        # 生成批次編號
+        # 生成批次基礎編號
         now = datetime.now()
-        batch_number = f"BATCH-{station_id}-{now.strftime('%Y%m%d-%H%M%S')}"
+        batch_base = f"BATCH-{station_id}-{now.strftime('%Y%m%d-%H%M%S')}"
+
+        # 為每一袋血生成獨立標籤
+        labels_html = []
+        for i in range(1, quantity + 1):
+            bag_number = f"{batch_base}-{i:03d}"
+            label_number = f"{i}/{quantity}"
+
+            label_html = f"""
+    <div class="label">
+        <div class="header">血袋標籤 {label_number}</div>
+        <div class="blood-type">{blood_type}</div>
+        <div class="quantity">1 U</div>
+        <div class="info">編號: <span class="code">{bag_number}</span></div>
+        <div class="info">站點: {station_id}</div>
+        <div class="info">入庫時間: {now.strftime('%Y-%m-%d %H:%M')}</div>
+        {f'<div class="info">備註: {remarks}</div>' if remarks else ''}
+        <div class="warning">⚠ 使用前請確認血型 ⚠</div>
+    </div>"""
+            labels_html.append(label_html)
 
         # 生成HTML標籤
         html_content = f"""
@@ -3059,11 +3078,13 @@ async def get_blood_batch_label(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>血袋批次標籤 - {blood_type}</title>
+    <title>血袋標籤 - {blood_type} ({quantity}張)</title>
     <style>
         @media print {{
             @page {{ size: 5cm 5cm landscape; margin: 0; }}
             body {{ margin: 0; padding: 0; }}
+            .label {{ page-break-after: always; }}
+            .label:last-child {{ page-break-after: auto; }}
         }}
         body {{
             font-family: 'Microsoft JhengHei', 'SimHei', sans-serif;
@@ -3130,16 +3151,7 @@ async def get_blood_batch_label(
     </style>
 </head>
 <body onload="window.print();">
-    <div class="label">
-        <div class="header">血袋批次標籤</div>
-        <div class="blood-type">{blood_type}</div>
-        <div class="quantity">數量: {quantity} U</div>
-        <div class="info">批號: <span class="code">{batch_number}</span></div>
-        <div class="info">站點: {station_id}</div>
-        <div class="info">入庫時間: {now.strftime('%Y-%m-%d %H:%M')}</div>
-        {f'<div class="info">備註: {remarks}</div>' if remarks else ''}
-        <div class="warning">⚠ 使用前請確認血型 ⚠</div>
-    </div>
+{''.join(labels_html)}
 </body>
 </html>
 """
