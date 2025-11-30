@@ -1993,7 +1993,17 @@
                                     <td class="px-4 py-2 text-sm text-gray-600" x-text="record.remarks || '-'"></td>
                                     <td class="px-4 py-2 text-sm" x-text="record.operator"></td>
                                     <td class="px-4 py-2 text-sm">
-                                        <button @click="viewBloodDetail(record)" class="text-blood-500 hover:text-blood-600 font-medium">詳情</button>
+                                        <div class="flex gap-2 items-center">
+                                            <button @click="printBloodLabelFromHistory(record)"
+                                                    class="text-claude-red-500 hover:text-claude-red-600 font-medium flex items-center gap-1"
+                                                    title="列印標籤">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                                </svg>
+                                                <span>列印</span>
+                                            </button>
+                                            <button @click="viewBloodDetail(record)" class="text-blood-500 hover:text-blood-600 font-medium">詳情</button>
+                                        </div>
                                     </td>
                                 </tr>
                             </template>
@@ -3477,6 +3487,20 @@
                         quantity: this.bloodReceiveForm.quantity,
                         station_id: this.stationId,
                         remarks: this.bloodReceiveForm.remarks || ''
+                    });
+
+                    // 開啟列印標籤頁面
+                    window.open(`${this.apiUrl}/blood/label?${params.toString()}`, '_blank');
+                    this.toast('正在開啟標籤列印...', 'info');
+                },
+
+                printBloodLabelFromHistory(record) {
+                    // 從歷史記錄列印標籤
+                    const params = new URLSearchParams({
+                        blood_type: record.blood_type,
+                        quantity: Math.abs(record.quantity),
+                        station_id: record.station_id,
+                        remarks: record.remarks || ''
                     });
 
                     // 開啟列印標籤頁面
