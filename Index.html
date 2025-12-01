@@ -314,16 +314,6 @@
                     <span class="text-xs sm:text-sm truncate">設備管理</span>
                 </button>
 
-                <!-- 藥品管理 - 藥品色系 teal-600 -->
-                <button @click="switchTab('pharma')"
-                        :class="currentTab === 'pharma' ? 'bg-pharma-600 text-white font-semibold shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                        class="flex-1 py-2.5 sm:py-3 px-2 sm:px-3 md:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 min-w-0">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                    <span class="text-xs sm:text-sm truncate">藥品管理</span>
-                </button>
-
             </div>
         </div>
 
@@ -350,6 +340,29 @@
                         <span>重新載入</span>
                     </button>
                 </div>
+            </div>
+
+            <!-- 分類篩選標籤 (v1.4.2-plus: 藥品/耗材分類) -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button @click="itemCategoryFilter = ''; filterItems()"
+                        :class="itemCategoryFilter === '' ? 'bg-teal-custom-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">全部</button>
+                <button @click="itemCategoryFilter = 'medicine'; filterItems()"
+                        :class="itemCategoryFilter === 'medicine' ? 'bg-pharma-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                    藥品 (MED-)
+                </button>
+                <button @click="itemCategoryFilter = 'consumable'; filterItems()"
+                        :class="itemCategoryFilter === 'consumable' ? 'bg-sky-custom-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    耗材
+                </button>
             </div>
 
             <!-- 搜尋框和匯出按鈕 -->
@@ -2433,339 +2446,6 @@
             </div>
         </div>
 
-        <!-- 藥品管理分頁 - v1.4.2-plus -->
-        <div :style="currentTab === 'pharma' ? '' : 'display: none !important'" class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-pharma-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                    藥品管理
-                </h2>
-                <div class="flex flex-wrap gap-2">
-                    <button @click="showPharmaHistoryModal = true; loadPharmaHistory()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span>歷史記錄</span>
-                    </button>
-                    <button @click="loadPharmaLowStock()" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span>低庫存警示</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 藥品分類標籤切換 -->
-            <div class="flex flex-wrap gap-2 mb-4">
-                <button @click="pharmaCategory = ''; filterPharma()"
-                        :class="pharmaCategory === '' ? 'bg-pharma-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-sm transition-colors">全部</button>
-                <button @click="pharmaCategory = '常用藥品'; filterPharma()"
-                        :class="pharmaCategory === '常用藥品' ? 'bg-pharma-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-sm transition-colors">常用藥品</button>
-                <button @click="pharmaCategory = '急救藥品'; filterPharma()"
-                        :class="pharmaCategory === '急救藥品' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-sm transition-colors">急救藥品</button>
-                <button @click="pharmaCategory = '麻醉藥品'; filterPharma()"
-                        :class="pharmaCategory === '麻醉藥品' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-sm transition-colors">麻醉藥品</button>
-                <button @click="pharmaCategory = '管制藥品'; filterPharma()"
-                        :class="pharmaCategory === '管制藥品' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-sm transition-colors">管制藥品</button>
-                <button @click="pharmaCategory = '輸液'; filterPharma()"
-                        :class="pharmaCategory === '輸液' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-sm transition-colors">輸液</button>
-            </div>
-
-            <!-- 搜尋欄 -->
-            <div class="mb-4">
-                <input type="text" x-model="pharmaSearchText" @input="filterPharma()" placeholder="搜尋藥品代碼或名稱..."
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-            </div>
-
-            <!-- 藥品進貨/消耗區域 -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- 藥品入庫 -->
-                <div class="bg-pharma-50 border-2 border-pharma-200 rounded-xl p-5">
-                    <h3 class="text-lg font-semibold text-pharma-700 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                        </svg>
-                        藥品入庫
-                    </h3>
-                    <form @submit.prevent="submitPharmaReceive()" class="space-y-3">
-                        <div class="relative">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">藥品 * (可搜尋)</label>
-                            <input type="text" x-model="pharmaReceiveSearch" @input="filterPharmaReceiveList()"
-                                   @focus="showPharmaReceiveDropdown = true"
-                                   @blur="setTimeout(() => showPharmaReceiveDropdown = false, 200)"
-                                   placeholder="輸入代碼或名稱搜尋..."
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                            <div x-show="showPharmaReceiveDropdown && filteredPharmaReceiveList.length > 0"
-                                 class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                <template x-for="pharma in filteredPharmaReceiveList.slice(0, 8)" :key="pharma.code">
-                                    <div @click.stop="selectPharmaReceive(pharma)" class="px-3 py-2 hover:bg-pharma-100 cursor-pointer">
-                                        <span class="font-mono text-xs text-gray-500" x-text="pharma.code"></span>
-                                        <span class="ml-2" x-text="pharma.name"></span>
-                                        <span class="text-xs text-gray-400 ml-2" x-text="'(' + pharma.generic_name + ')'"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">數量 *</label>
-                                <input type="number" x-model="pharmaReceiveForm.quantity" required min="1"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">批號</label>
-                                <input type="text" x-model="pharmaReceiveForm.batch_number"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">效期</label>
-                            <input type="date" x-model="pharmaReceiveForm.expiry_date"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                        </div>
-                        <button type="submit" class="w-full bg-pharma-600 text-white px-4 py-2 rounded-lg hover:bg-pharma-700 transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            <span>確認入庫</span>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- 藥品消耗 -->
-                <div class="bg-white border-2 border-pharma-200 rounded-xl p-5">
-                    <h3 class="text-lg font-semibold text-pharma-700 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
-                        </svg>
-                        藥品消耗
-                    </h3>
-                    <form @submit.prevent="submitPharmaConsume()" class="space-y-3">
-                        <div class="relative">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">藥品 * (可搜尋)</label>
-                            <input type="text" x-model="pharmaConsumeSearch" @input="filterPharmaConsumeList()"
-                                   @focus="showPharmaConsumeDropdown = true"
-                                   @blur="setTimeout(() => showPharmaConsumeDropdown = false, 200)"
-                                   placeholder="輸入代碼或名稱搜尋..."
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                            <div x-show="showPharmaConsumeDropdown && filteredPharmaConsumeList.length > 0"
-                                 class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                <template x-for="pharma in filteredPharmaConsumeList.slice(0, 8)" :key="pharma.code">
-                                    <div @click.stop="selectPharmaConsume(pharma)" class="px-3 py-2 hover:bg-pharma-100 cursor-pointer">
-                                        <span class="font-mono text-xs text-gray-500" x-text="pharma.code"></span>
-                                        <span class="ml-2" x-text="pharma.name"></span>
-                                        <span class="text-xs ml-2" :class="pharma.current_stock > 0 ? 'text-green-600' : 'text-red-600'"
-                                              x-text="'庫存: ' + pharma.current_stock"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">數量 *</label>
-                                <input type="number" x-model="pharmaConsumeForm.quantity" required min="1"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">用途</label>
-                                <select x-model="pharmaConsumeForm.purpose"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                                    <option value="treatment">處置使用</option>
-                                    <option value="surgery">手術使用</option>
-                                    <option value="expired">過期銷毀</option>
-                                    <option value="damaged">損耗報廢</option>
-                                    <option value="other">其他</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
-                            <input type="text" x-model="pharmaConsumeForm.remarks" placeholder="選填"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pharma-500 focus:border-transparent">
-                        </div>
-                        <button type="submit" class="w-full bg-pharma-600 text-white px-4 py-2 rounded-lg hover:bg-pharma-700 transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            <span>確認消耗</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- 藥品庫存列表 -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 table-hover">
-                    <thead class="bg-pharma-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">代碼</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">藥品名稱</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">學名</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">分類</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">儲存</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">管制</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">庫存</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">安全量</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <template x-for="pharma in filteredPharmaList" :key="pharma.code">
-                            <tr :class="pharma.current_stock < pharma.min_stock ? 'bg-red-50' : ''">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-900" x-text="pharma.code"></td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900" x-text="pharma.name"></td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="pharma.generic_name"></td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full"
-                                          :class="{
-                                              'bg-pharma-100 text-pharma-700': pharma.category === '常用藥品',
-                                              'bg-red-100 text-red-700': pharma.category === '急救藥品',
-                                              'bg-purple-100 text-purple-700': pharma.category === '麻醉藥品',
-                                              'bg-orange-100 text-orange-700': pharma.category === '管制藥品',
-                                              'bg-blue-100 text-blue-700': pharma.category === '輸液'
-                                          }"
-                                          x-text="pharma.category"></span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full"
-                                          :class="{
-                                              'bg-gray-100 text-gray-700': pharma.storage_condition === '常溫',
-                                              'bg-blue-100 text-blue-700': pharma.storage_condition === '冷藏',
-                                              'bg-cyan-100 text-cyan-700': pharma.storage_condition === '冷凍'
-                                          }"
-                                          x-text="pharma.storage_condition"></span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full"
-                                          :class="{
-                                              'bg-gray-100 text-gray-600': pharma.controlled_level === '非管制',
-                                              'bg-red-200 text-red-800': pharma.controlled_level !== '非管制'
-                                          }"
-                                          x-text="pharma.controlled_level"></span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-center">
-                                    <span class="text-lg font-bold"
-                                          :class="pharma.current_stock < pharma.min_stock ? 'text-red-600' : 'text-green-600'"
-                                          x-text="pharma.current_stock"></span>
-                                    <span class="text-xs text-gray-500 ml-1" x-text="pharma.unit"></span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-500" x-text="pharma.min_stock"></td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 藥品歷史記錄 Modal -->
-        <div x-show="showPharmaHistoryModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showPharmaHistoryModal = false"></div>
-                <div class="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4 flex items-center gap-2">
-                        <svg class="w-6 h-6 text-pharma-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        藥品進出記錄
-                    </h3>
-                    <div class="max-h-96 overflow-y-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50 sticky top-0">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">時間</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">藥品</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">類型</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">數量</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">備註</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="event in pharmaHistory" :key="event.id">
-                                    <tr>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="new Date(event.event_time).toLocaleString('zh-TW')"></td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900" x-text="event.pharma_code"></td>
-                                        <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="px-2 py-1 text-xs font-medium rounded-full"
-                                                  :class="event.event_type === 'RECEIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'"
-                                                  x-text="event.event_type === 'RECEIVE' ? '入庫' : '消耗'"></span>
-                                        </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-center">
-                                            <span :class="event.event_type === 'RECEIVE' ? 'text-green-600' : 'text-orange-600'"
-                                                  x-text="(event.event_type === 'RECEIVE' ? '+' : '-') + event.quantity"></span>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-500" x-text="event.remarks || '-'"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-4 flex justify-end">
-                        <button @click="showPharmaHistoryModal = false" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
-                            關閉
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 低庫存警示 Modal -->
-        <div x-show="showPharmaLowStockModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showPharmaLowStockModal = false"></div>
-                <div class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative">
-                    <h3 class="text-lg font-medium leading-6 text-red-600 mb-4 flex items-center gap-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        藥品低庫存警示
-                    </h3>
-                    <div class="max-h-80 overflow-y-auto">
-                        <template x-if="pharmaLowStockList.length === 0">
-                            <p class="text-center text-gray-500 py-8">目前無低庫存藥品</p>
-                        </template>
-                        <template x-if="pharmaLowStockList.length > 0">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-red-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">藥品</th>
-                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">目前庫存</th>
-                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">安全庫存</th>
-                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">缺口</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <template x-for="item in pharmaLowStockList" :key="item.code">
-                                        <tr class="bg-red-50">
-                                            <td class="px-4 py-3">
-                                                <div class="text-sm font-medium text-gray-900" x-text="item.name"></div>
-                                                <div class="text-xs text-gray-500" x-text="item.code"></div>
-                                            </td>
-                                            <td class="px-4 py-3 text-center text-lg font-bold text-red-600" x-text="item.current_stock"></td>
-                                            <td class="px-4 py-3 text-center text-sm text-gray-500" x-text="item.min_stock"></td>
-                                            <td class="px-4 py-3 text-center text-lg font-bold text-red-700" x-text="item.min_stock - item.current_stock"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </template>
-                    </div>
-                    <div class="mt-4 flex justify-end">
-                        <button @click="showPharmaLowStockModal = false" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
-                            關閉
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Footer -->
         <footer class="mt-12 pt-8 border-t border-gray-200">
             <div class="flex flex-col items-center justify-center gap-4">
@@ -2823,6 +2503,7 @@
 
                 // 搜尋與篩選
                 itemSearchText: '',
+                itemCategoryFilter: '',  // 分類篩選 (空字串=全部, 'medicine'=藥品, 'consumable'=耗材)
                 receiveItemSearch: '',
                 filteredReceiveItems: [],
                 showReceiveDropdown: false,
@@ -2841,34 +2522,6 @@
                 showBloodHistoryModal: false,
                 showEmergencyReasonModal: false,
                 showPharmacistApprovalModal: false,
-                showPharmaHistoryModal: false,
-                showPharmaLowStockModal: false,
-
-                // 藥品管理 (v1.4.2-plus)
-                pharmaList: [],
-                filteredPharmaList: [],
-                pharmaCategory: '',
-                pharmaSearchText: '',
-                pharmaHistory: [],
-                pharmaLowStockList: [],
-                pharmaReceiveSearch: '',
-                pharmaConsumeSearch: '',
-                filteredPharmaReceiveList: [],
-                filteredPharmaConsumeList: [],
-                showPharmaReceiveDropdown: false,
-                showPharmaConsumeDropdown: false,
-                pharmaReceiveForm: {
-                    code: '',
-                    quantity: 1,
-                    batch_number: '',
-                    expiry_date: ''
-                },
-                pharmaConsumeForm: {
-                    code: '',
-                    quantity: 1,
-                    purpose: 'treatment',
-                    remarks: ''
-                },
 
                 // 血庫歷史記錄
                 bloodHistory: [],
@@ -3058,8 +2711,7 @@
                     blood: false,
                     equipment: false,
                     surgery: false,
-                    dispense: false,
-                    pharma: false
+                    dispense: false
                 },
 
                 // 初始化 (v1.4.5優化: 延遲載入)
@@ -3136,10 +2788,6 @@
                     if (tab === 'dispense' && !this.dataLoaded.dispense) {
                         await this.loadPendingDispenses();
                         this.dataLoaded.dispense = true;
-                    }
-                    if (tab === 'pharma' && !this.dataLoaded.pharma) {
-                        await this.loadPharmaList();
-                        this.dataLoaded.pharma = true;
                     }
                 },
 
@@ -3425,18 +3073,28 @@
                     }
                 },
 
-                // 篩選物品
+                // 篩選物品 (v1.4.2-plus: 支援藥品/耗材分類篩選)
                 filterItems() {
+                    let result = this.items;
+
+                    // 分類篩選 (藥品 = MED- 開頭, 耗材 = 非 MED- 開頭)
+                    if (this.itemCategoryFilter === 'medicine') {
+                        result = result.filter(item => item.code.startsWith('MED-'));
+                    } else if (this.itemCategoryFilter === 'consumable') {
+                        result = result.filter(item => !item.code.startsWith('MED-'));
+                    }
+
+                    // 文字搜尋
                     const searchText = this.itemSearchText.toLowerCase();
-                    if (!searchText) {
-                        this.filteredItems = this.items;
-                    } else {
-                        this.filteredItems = this.items.filter(item =>
+                    if (searchText) {
+                        result = result.filter(item =>
                             item.code.toLowerCase().includes(searchText) ||
                             item.name.toLowerCase().includes(searchText) ||
                             item.category.toLowerCase().includes(searchText)
                         );
                     }
+
+                    this.filteredItems = result;
                 },
 
                 // 匯出庫存CSV
@@ -4244,183 +3902,6 @@
                     const now = new Date();
                     const diffDays = (expiry - now) / (1000 * 60 * 60 * 24);
                     return diffDays <= 7 && diffDays >= 0;
-                },
-
-                // ========== 藥品管理 (v1.4.2-plus) ==========
-                async loadPharmaList() {
-                    try {
-                        const response = await fetch(`${this.apiUrl}/pharma/list`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.pharmaList = data.pharmaceuticals || [];
-                            this.filterPharma();
-                            console.log('✓ 藥品已載入:', this.pharmaList.length, '項');
-                        } else {
-                            console.error('藥品API錯誤:', response.status);
-                        }
-                    } catch (error) {
-                        console.error('載入藥品失敗:', error);
-                    }
-                },
-
-                filterPharma() {
-                    let result = this.pharmaList;
-
-                    // 分類篩選
-                    if (this.pharmaCategory) {
-                        result = result.filter(p => p.category === this.pharmaCategory);
-                    }
-
-                    // 文字搜尋
-                    if (this.pharmaSearchText) {
-                        const search = this.pharmaSearchText.toLowerCase();
-                        result = result.filter(p =>
-                            p.code.toLowerCase().includes(search) ||
-                            p.name.toLowerCase().includes(search) ||
-                            (p.generic_name && p.generic_name.toLowerCase().includes(search))
-                        );
-                    }
-
-                    this.filteredPharmaList = result;
-                },
-
-                filterPharmaReceiveList() {
-                    if (!this.pharmaReceiveSearch) {
-                        this.filteredPharmaReceiveList = this.pharmaList.slice(0, 20);
-                        return;
-                    }
-                    const search = this.pharmaReceiveSearch.toLowerCase();
-                    this.filteredPharmaReceiveList = this.pharmaList.filter(p =>
-                        p.code.toLowerCase().includes(search) ||
-                        p.name.toLowerCase().includes(search) ||
-                        (p.generic_name && p.generic_name.toLowerCase().includes(search))
-                    ).slice(0, 20);
-                },
-
-                filterPharmaConsumeList() {
-                    if (!this.pharmaConsumeSearch) {
-                        this.filteredPharmaConsumeList = this.pharmaList.slice(0, 20);
-                        return;
-                    }
-                    const search = this.pharmaConsumeSearch.toLowerCase();
-                    this.filteredPharmaConsumeList = this.pharmaList.filter(p =>
-                        p.code.toLowerCase().includes(search) ||
-                        p.name.toLowerCase().includes(search) ||
-                        (p.generic_name && p.generic_name.toLowerCase().includes(search))
-                    ).slice(0, 20);
-                },
-
-                selectPharmaReceive(pharma) {
-                    this.pharmaReceiveForm.code = pharma.code;
-                    this.pharmaReceiveSearch = `${pharma.code} - ${pharma.name}`;
-                    this.showPharmaReceiveDropdown = false;
-                },
-
-                selectPharmaConsume(pharma) {
-                    this.pharmaConsumeForm.code = pharma.code;
-                    this.pharmaConsumeSearch = `${pharma.code} - ${pharma.name} (庫存: ${pharma.current_stock})`;
-                    this.showPharmaConsumeDropdown = false;
-                },
-
-                async submitPharmaReceive() {
-                    if (!this.pharmaReceiveForm.code) {
-                        this.toast('請選擇藥品', 'error');
-                        return;
-                    }
-                    if (!this.pharmaReceiveForm.quantity || this.pharmaReceiveForm.quantity < 1) {
-                        this.toast('請輸入有效數量', 'error');
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch(`${this.apiUrl}/pharma/receive`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                code: this.pharmaReceiveForm.code,
-                                quantity: parseInt(this.pharmaReceiveForm.quantity),
-                                batch_number: this.pharmaReceiveForm.batch_number || null,
-                                expiry_date: this.pharmaReceiveForm.expiry_date || null
-                            })
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            this.toast(data.message || '藥品入庫成功', 'success');
-                            this.pharmaReceiveForm = { code: '', quantity: 1, batch_number: '', expiry_date: '' };
-                            this.pharmaReceiveSearch = '';
-                            await this.loadPharmaList();
-                        } else {
-                            this.toast(data.detail || '入庫失敗', 'error');
-                        }
-                    } catch (error) {
-                        console.error('藥品入庫失敗:', error);
-                        this.toast('藥品入庫失敗', 'error');
-                    }
-                },
-
-                async submitPharmaConsume() {
-                    if (!this.pharmaConsumeForm.code) {
-                        this.toast('請選擇藥品', 'error');
-                        return;
-                    }
-                    if (!this.pharmaConsumeForm.quantity || this.pharmaConsumeForm.quantity < 1) {
-                        this.toast('請輸入有效數量', 'error');
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch(`${this.apiUrl}/pharma/consume`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                code: this.pharmaConsumeForm.code,
-                                quantity: parseInt(this.pharmaConsumeForm.quantity),
-                                purpose: this.pharmaConsumeForm.purpose,
-                                remarks: this.pharmaConsumeForm.remarks || null
-                            })
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            this.toast(data.message || '藥品消耗成功', 'success');
-                            this.pharmaConsumeForm = { code: '', quantity: 1, purpose: 'treatment', remarks: '' };
-                            this.pharmaConsumeSearch = '';
-                            await this.loadPharmaList();
-                        } else {
-                            this.toast(data.detail || '消耗失敗', 'error');
-                        }
-                    } catch (error) {
-                        console.error('藥品消耗失敗:', error);
-                        this.toast('藥品消耗失敗', 'error');
-                    }
-                },
-
-                async loadPharmaHistory() {
-                    try {
-                        const response = await fetch(`${this.apiUrl}/pharma/events?limit=100`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.pharmaHistory = data.events || [];
-                        }
-                    } catch (error) {
-                        console.error('載入藥品歷史失敗:', error);
-                    }
-                },
-
-                async loadPharmaLowStock() {
-                    try {
-                        const response = await fetch(`${this.apiUrl}/pharma/low-stock`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.pharmaLowStockList = data.low_stock_items || [];
-                            this.showPharmaLowStockModal = true;
-                        }
-                    } catch (error) {
-                        console.error('載入低庫存藥品失敗:', error);
-                    }
                 },
 
                 // ========== 設備管理 ==========

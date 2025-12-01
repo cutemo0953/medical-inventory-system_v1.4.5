@@ -1166,27 +1166,31 @@ class DatabaseManager:
         logger.info(f"✓ 已初始化站點: {station_id} ({config.get_station_name()})")
 
     def _load_template_data(self, cursor):
-        """v1.4.2-plus: 統一預載所有藥品/設備/耗材"""
+        """v1.4.2-plus: 統一預載所有藥品/耗材/設備 (藥品使用 MED- 前綴整合到 items 表)"""
         try:
-            from preload_data import PHARMACEUTICALS_DATA, EQUIPMENT_DATA, CONSUMABLES_DATA
+            from preload_data import get_all_items, EQUIPMENT_DATA
 
-            # 檢查是否已有藥品資料 (避免重複載入)
-            cursor.execute("SELECT COUNT(*) FROM pharmaceuticals")
-            pharma_count = cursor.fetchone()[0]
+            # 檢查是否已有 MED- 開頭的藥品資料 (避免重複載入)
+            cursor.execute("SELECT COUNT(*) FROM items WHERE item_code LIKE 'MED-%'")
+            med_count = cursor.fetchone()[0]
 
-            if pharma_count == 0:
+            if med_count == 0:
                 logger.info("首次執行，開始預載政府標準資料庫...")
 
-                # 預載藥品
-                for p in PHARMACEUTICALS_DATA:
+                # 預載所有 items (藥品 + 耗材，藥品用 MED- 前綴區分)
+                all_items = get_all_items()
+                for item in all_items:
                     cursor.execute("""
-                        INSERT OR IGNORE INTO pharmaceuticals
-                        (code, name, generic_name, unit, min_stock, current_stock, category, storage_condition, controlled_level)
-                        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
-                    """, (p['code'], p['name'], p['generic_name'], p['unit'], p['min_stock'],
-                          p['category'], p['storage_condition'], p['controlled_level']))
+                        INSERT OR IGNORE INTO items
+                        (item_code, item_name, category, unit, min_stock)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (item['code'], item['name'], item['category'], item['unit'], item['min_stock']))
 
-                logger.info(f"✓ 預載 {len(PHARMACEUTICALS_DATA)} 種藥品")
+                # 統計藥品和耗材數量
+                medicines = [i for i in all_items if i['code'].startswith('MED-')]
+                consumables = [i for i in all_items if not i['code'].startswith('MED-')]
+                logger.info(f"✓ 預載 {len(medicines)} 種藥品 (MED- 前綴)")
+                logger.info(f"✓ 預載 {len(consumables)} 種耗材")
 
                 # 預載設備
                 for e in EQUIPMENT_DATA:
@@ -1197,19 +1201,9 @@ class DatabaseManager:
                     """, (e['id'], e['name'], e['category'], e['quantity']))
 
                 logger.info(f"✓ 預載 {len(EQUIPMENT_DATA)} 種設備")
-
-                # 預載耗材
-                for c in CONSUMABLES_DATA:
-                    cursor.execute("""
-                        INSERT OR IGNORE INTO items
-                        (item_code, item_name, category, unit, min_stock)
-                        VALUES (?, ?, ?, ?, ?)
-                    """, (c['code'], c['name'], c['category'], c['unit'], c['min_stock']))
-
-                logger.info(f"✓ 預載 {len(CONSUMABLES_DATA)} 種耗材")
                 logger.info("✓ 政府標準資料庫預載完成")
             else:
-                logger.info(f"資料庫已存在 {pharma_count} 種藥品，跳過預載")
+                logger.info(f"資料庫已存在 {med_count} 種藥品，跳過預載")
 
         except ImportError:
             logger.warning("preload_data.py 不存在，使用空白資料庫")
@@ -3350,7 +3344,7 @@ async def get_blood_batch_label(
     station_id: str = Query("HC-000000", description="站點ID"),
     remarks: str = Query("", description="批號或備註")
 ):
-    """取得一般血袋批次標籤 (HTML) - 用於列印 - 每1U一張標籤"""
+    """取得一般血袋批次標籤 (HTML) - 用於列印 - 多標籤排列在 A4 紙上"""
     try:
         from datetime import datetime
 
@@ -3365,19 +3359,19 @@ async def get_blood_batch_label(
             label_number = f"{i}/{quantity}"
 
             label_html = f"""
-    <div class="label">
-        <div class="header">血袋標籤 {label_number}</div>
-        <div class="blood-type">{blood_type}</div>
-        <div class="quantity">1 U</div>
-        <div class="info">編號: <span class="code">{bag_number}</span></div>
-        <div class="info">站點: {station_id}</div>
-        <div class="info">入庫時間: {now.strftime('%Y-%m-%d %H:%M')}</div>
-        {f'<div class="info">備註: {remarks}</div>' if remarks else ''}
-        <div class="warning">⚠ 使用前請確認血型 ⚠</div>
-    </div>"""
+        <div class="label">
+            <div class="header">血袋標籤 {label_number}</div>
+            <div class="blood-type">{blood_type}</div>
+            <div class="volume">1 U</div>
+            <div class="info">編號: <span class="code">{bag_number}</span></div>
+            <div class="info">站點: {station_id}</div>
+            <div class="info">入庫: {now.strftime('%Y-%m-%d %H:%M')}</div>
+            {f'<div class="info">備註: {remarks}</div>' if remarks else ''}
+            <div class="warning">⚠ 使用前請確認血型 ⚠</div>
+        </div>"""
             labels_html.append(label_html)
 
-        # 生成HTML標籤
+        # 生成可列印的 HTML 頁面 - 多標籤排列在 A4 上
         html_content = f"""
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -3387,77 +3381,96 @@ async def get_blood_batch_label(
     <title>血袋標籤 - {blood_type} ({quantity}張)</title>
     <style>
         @media print {{
-            @page {{ size: 5cm 5cm landscape; margin: 0; }}
-            body {{ margin: 0; padding: 0; }}
-            .label {{ page-break-after: always; }}
-            .label:last-child {{ page-break-after: auto; }}
+            @page {{
+                size: A4;
+                margin: 5mm;
+            }}
+            body {{ margin: 0; }}
+        }}
+        * {{
+            box-sizing: border-box;
         }}
         body {{
-            font-family: 'Microsoft JhengHei', 'SimHei', sans-serif;
-            font-size: 8pt;
-            line-height: 1.2;
-            margin: 0;
+            font-family: 'Microsoft JhengHei', 'SimHei', Arial, sans-serif;
+            margin: 5mm;
             padding: 0;
         }}
+        .labels-container {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2mm;
+            justify-content: flex-start;
+        }}
         .label {{
-            width: 5cm;
-            height: 5cm;
-            border: 2px solid #000;
-            padding: 0.15cm;
-            box-sizing: border-box;
+            width: 50mm;
+            height: 70mm;
+            border: 1.5px solid #000;
+            padding: 2mm;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            background: white;
+            page-break-inside: avoid;
         }}
         .header {{
             text-align: center;
             font-weight: bold;
             font-size: 9pt;
-            border-bottom: 1px solid #000;
+            border-bottom: 1.5px solid #000;
             padding-bottom: 2px;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             background-color: #f0f0f0;
         }}
         .blood-type {{
-            font-size: 22pt;
+            font-size: 28pt;
             font-weight: bold;
-            color: #d00;
+            color: #cc0000;
+            text-align: center;
+            margin: 5px 0;
+            line-height: 1.1;
+        }}
+        .volume {{
+            font-size: 14pt;
+            font-weight: bold;
+            color: #cc0000;
             text-align: center;
             margin: 2px 0;
-            line-height: 1;
         }}
         .info {{
-            font-size: 7pt;
-            margin: 1px 0;
-            line-height: 1.1;
+            font-size: 8pt;
+            margin: 2px 0;
+            line-height: 1.3;
         }}
         .code {{
             font-family: 'Courier New', monospace;
             font-weight: bold;
-            font-size: 6pt;
-        }}
-        .quantity {{
-            font-size: 12pt;
-            font-weight: bold;
-            color: #d00;
-            text-align: center;
-            margin: 2px 0;
-            line-height: 1;
+            font-size: 7pt;
         }}
         .warning {{
-            color: #d00;
+            color: #cc0000;
             font-weight: bold;
             font-size: 7pt;
             text-align: center;
-            margin-top: 2px;
+            margin-top: auto;
             border-top: 1px solid #000;
             padding-top: 2px;
-            line-height: 1;
+        }}
+        .print-info {{
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 10pt;
+            color: #666;
+        }}
+        @media print {{
+            .print-info {{ display: none; }}
         }}
     </style>
 </head>
 <body onload="window.print();">
-{''.join(labels_html)}
+    <div class="print-info">共 {quantity} 張標籤 ({blood_type}) - 建議使用 A4 紙列印</div>
+    <div class="labels-container">
+        {''.join(labels_html)}
+    </div>
 </body>
 </html>
 """
@@ -5725,8 +5738,9 @@ async def use_blood_bag(request: BloodBagUseRequest):
 @app.get("/api/blood-bags/print-labels/{bag_codes}")
 async def print_blood_bag_labels(bag_codes: str):
     """
-    生成血袋標籤列印資料
+    生成血袋標籤列印頁面 (HTML) - 多標籤排列在 A4 紙上
     bag_codes: 逗號分隔的血袋編號，例如 "BB-AP-251201-001,BB-AP-251201-002"
+    標籤尺寸: 5cm x 7cm，每頁可排 4列 x 3行 = 12 張標籤
     """
     codes = [c.strip() for c in bag_codes.split(",")]
 
@@ -5744,22 +5758,125 @@ async def print_blood_bag_labels(bag_codes: str):
         if not bags:
             raise HTTPException(status_code=404, detail="找不到指定的血袋")
 
-        # 生成標籤資料
-        labels = []
+        # 生成每個標籤的 HTML
+        labels_html = []
         for bag in bags:
-            labels.append({
-                "bag_code": bag['bag_code'],
-                "blood_type": bag['blood_type'],
-                "volume_ml": bag['volume_ml'],
-                "collection_date": bag['collection_date'],
-                "expiry_date": bag['expiry_date'],
-                "qr_data": f"MIRS-BLOOD|{bag['bag_code']}|{bag['blood_type']}|{bag['expiry_date']}"
-            })
+            label_html = f"""
+        <div class="label">
+            <div class="header">血袋標籤 BLOOD BAG</div>
+            <div class="blood-type">{bag['blood_type']}</div>
+            <div class="volume">{bag['volume_ml']} ml</div>
+            <div class="info">編號: <span class="code">{bag['bag_code']}</span></div>
+            <div class="info">採集: {bag['collection_date'] or '-'}</div>
+            <div class="info"><strong>效期: {bag['expiry_date'] or '-'}</strong></div>
+            <div class="warning">⚠ 使用前請確認血型與效期 ⚠</div>
+        </div>"""
+            labels_html.append(label_html)
 
-        return {
-            "labels": labels,
-            "count": len(labels)
-        }
+        # 生成可列印的 HTML 頁面 - 多標籤排列在 A4 上
+        html_content = f"""
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>血袋標籤 ({len(bags)}張)</title>
+    <style>
+        @media print {{
+            @page {{
+                size: A4;
+                margin: 5mm;
+            }}
+            body {{ margin: 0; }}
+        }}
+        * {{
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: 'Microsoft JhengHei', 'SimHei', Arial, sans-serif;
+            margin: 5mm;
+            padding: 0;
+        }}
+        .labels-container {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2mm;
+            justify-content: flex-start;
+        }}
+        .label {{
+            width: 50mm;
+            height: 70mm;
+            border: 1.5px solid #000;
+            padding: 2mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: white;
+            page-break-inside: avoid;
+        }}
+        .header {{
+            text-align: center;
+            font-weight: bold;
+            font-size: 9pt;
+            border-bottom: 1.5px solid #000;
+            padding-bottom: 2px;
+            margin-bottom: 3px;
+            background-color: #f0f0f0;
+        }}
+        .blood-type {{
+            font-size: 28pt;
+            font-weight: bold;
+            color: #cc0000;
+            text-align: center;
+            margin: 5px 0;
+            line-height: 1.1;
+        }}
+        .volume {{
+            font-size: 14pt;
+            font-weight: bold;
+            color: #cc0000;
+            text-align: center;
+            margin: 2px 0;
+        }}
+        .info {{
+            font-size: 8pt;
+            margin: 2px 0;
+            line-height: 1.3;
+        }}
+        .code {{
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 7pt;
+        }}
+        .warning {{
+            color: #cc0000;
+            font-weight: bold;
+            font-size: 7pt;
+            text-align: center;
+            margin-top: auto;
+            border-top: 1px solid #000;
+            padding-top: 2px;
+        }}
+        .print-info {{
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 10pt;
+            color: #666;
+        }}
+        @media print {{
+            .print-info {{ display: none; }}
+        }}
+    </style>
+</head>
+<body onload="window.print();">
+    <div class="print-info">共 {len(bags)} 張標籤 - 建議使用 A4 紙列印</div>
+    <div class="labels-container">
+        {''.join(labels_html)}
+    </div>
+</body>
+</html>
+"""
+        return HTMLResponse(content=html_content)
 
     except HTTPException:
         raise
