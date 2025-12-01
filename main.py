@@ -18,6 +18,8 @@ import zipfile
 import shutil
 import hashlib
 import asyncio
+import os
+from enum import Enum
 
 from fastapi import FastAPI, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -70,46 +72,118 @@ logger = setup_logging()
 # 配置
 # ============================================================================
 
+class StationType(str, Enum):
+    """站點類型枚舉"""
+    HC = "HC"           # Health Center 衛生所
+    BORP = "BORP"       # Backup Operating Room Point 備援手術室
+    LOG_HUB = "LOG-HUB" # Logistic Hub 物資中心
+    HOSP = "HOSP"       # Hospital Custom 醫院自訂
+
 class Config:
-    """系統配置"""
-    VERSION = "1.4.5"
+    """系統配置 - v2.0 靜態配置架構"""
+    VERSION = "2.0.0"
     DATABASE_PATH = "medical_inventory.db"
-    STATION_ID = "HC-000000"  # 預設值，啟動時會自動更新
-    DEBUG = True
+    TEMPLATES_PATH = "templates"
+
+    # ========== 站點配置 (三層結構) ==========
+    # TYPE: 決定載入的資料庫 Template
+    STATION_TYPE: str = os.getenv("MIRS_STATION_TYPE", "BORP")
+
+    # ORG: 機構識別碼
+    STATION_ORG: str = os.getenv("MIRS_STATION_ORG", "VGH")
+
+    # NUMBER: 站點編號
+    STATION_NUMBER: str = os.getenv("MIRS_STATION_NUMBER", "01")
+
+    # 組合成完整站點 ID
+    @classmethod
+    def get_station_id(cls) -> str:
+        return f"{cls.STATION_TYPE}-{cls.STATION_ORG}-{cls.STATION_NUMBER}"
+
+    # ========== 站點顯示名稱 ==========
+    STATION_NAME: str = os.getenv("MIRS_STATION_NAME", "")
+
+    @classmethod
+    def get_station_name(cls) -> str:
+        """取得站點顯示名稱，如果未設定則自動生成"""
+        if cls.STATION_NAME:
+            return cls.STATION_NAME
+
+        type_names = {
+            "HC": "衛生所",
+            "BORP": "備援手術室",
+            "LOG-HUB": "物資中心",
+            "HOSP": "醫院站"
+        }
+        type_name = type_names.get(cls.STATION_TYPE, "站點")
+        return f"{cls.STATION_ORG} {type_name} {cls.STATION_NUMBER}"
+
+    # ========== 組織配置 ==========
+    ORG_CODE: str = os.getenv("MIRS_ORG_CODE", "DNO")
+    ORG_NAME: str = os.getenv("MIRS_ORG_NAME", "De Novo Orthopedics")
+
+    # ========== 系統配置 ==========
+    DEBUG: bool = os.getenv("MIRS_DEBUG", "false").lower() == "true"
+    TIMEZONE: str = "Asia/Taipei"
 
     # 血型列表
     BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
 
+    # ========== Template 對應表 ==========
+    TEMPLATE_MAP = {
+        "HC": "template_hc.sql",
+        "BORP": "template_borp.sql",
+        "LOG-HUB": "template_log.sql",
+        "HOSP": "template_hosp.sql"
+    }
+
     @classmethod
-    def load_station_id_from_db(cls):
-        """從資料庫載入實際的站點 ID（排除預設的 HC-000000）"""
-        try:
-            conn = sqlite3.connect(cls.DATABASE_PATH)
-            cursor = conn.cursor()
+    def get_template_path(cls) -> Optional[Path]:
+        """取得對應的 Template 檔案路徑"""
+        template_file = cls.TEMPLATE_MAP.get(cls.STATION_TYPE)
+        if template_file:
+            template_path = Path(cls.TEMPLATES_PATH) / template_file
+            if template_path.exists():
+                return template_path
+        return None
 
-            # 優先讀取非預設站點（排除 HC-000000）
-            cursor.execute("""
-                SELECT station_code FROM station_metadata
-                WHERE station_code != 'HC-000000'
-                ORDER BY created_at DESC LIMIT 1
-            """)
-            result = cursor.fetchone()
+    @classmethod
+    def load_from_file(cls, config_path: str = "config/station_config.json"):
+        """從配置檔案載入站點設定"""
+        config_file = Path(config_path)
+        if config_file.exists():
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
 
-            if result:
-                cls.STATION_ID = result[0]
-                logger.info(f"✓ 已載入站點 ID: {cls.STATION_ID}")
-            else:
-                # 如果沒有其他站點，使用預設站點
-                logger.info(f"使用預設站點 ID: {cls.STATION_ID}")
+                    # 載入站點配置
+                    if 'station' in data:
+                        station = data['station']
+                        cls.STATION_TYPE = station.get('type', cls.STATION_TYPE)
+                        cls.STATION_ORG = station.get('org', cls.STATION_ORG)
+                        cls.STATION_NUMBER = station.get('number', cls.STATION_NUMBER)
+                        cls.STATION_NAME = station.get('name', cls.STATION_NAME)
 
-            conn.close()
-        except sqlite3.OperationalError:
-            # 資料庫表還不存在，使用預設值
-            logger.info(f"資料庫初始化中，使用預設站點 ID: {cls.STATION_ID}")
-        except Exception as e:
-            logger.warning(f"載入站點 ID 失敗: {e}，使用預設值: {cls.STATION_ID}")
+                    # 載入組織配置
+                    if 'organization' in data:
+                        org = data['organization']
+                        cls.ORG_CODE = org.get('code', cls.ORG_CODE)
+                        cls.ORG_NAME = org.get('name', cls.ORG_NAME)
 
-config = Config()
+                    logger.info(f"✓ 配置載入成功: {cls.get_station_id()}")
+
+            except Exception as e:
+                logger.warning(f"無法載入配置檔案: {e}，使用預設值")
+        else:
+            logger.info(f"配置檔案不存在: {config_path}，使用預設值")
+
+        return cls
+
+# 初始化配置
+config = Config.load_from_file()
+
+# 為了向下相容，設定 STATION_ID 屬性
+Config.STATION_ID = Config.get_station_id()
 
 
 # ============================================================================
@@ -919,21 +993,21 @@ class DatabaseManager:
             """)
             # ========== 聯邦式架構結束 ==========
 
-            # 初始化預設設備 - 已停用，改由 profile 系統處理
-            # self._init_default_equipment(cursor)
-
-            # 初始化預設醫院和站點(聯邦架構)
+            # v2.0: 載入站點資訊到資料庫
             self._init_hospitals_and_stations(cursor)
+
+            # v2.0: 根據站點類型載入 Template 資料
+            self._load_template_data(cursor)
 
             # 初始化血型庫存
             for blood_type in config.BLOOD_TYPES:
                 cursor.execute("""
                     INSERT OR IGNORE INTO blood_inventory (blood_type, quantity, station_id)
                     VALUES (?, 0, ?)
-                """, (blood_type, config.STATION_ID))
+                """, (blood_type, config.get_station_id()))
 
             conn.commit()
-            logger.info("資料庫初始化完成")
+            logger.info(f"✓ 資料庫初始化完成: {config.get_station_id()}")
             
         except Exception as e:
             logger.error(f"資料庫初始化失敗: {e}")
@@ -958,7 +1032,7 @@ class DatabaseManager:
             """, (eq_id, eq_name, eq_category))
 
     def _init_hospitals_and_stations(self, cursor):
-        """初始化預設醫院和站點(聯邦架構)"""
+        """初始化預設醫院和站點(聯邦架構) - v2.0"""
         # 建立預設醫院 HOSP-001
         cursor.execute("""
             INSERT OR IGNORE INTO hospitals (
@@ -968,7 +1042,7 @@ class DatabaseManager:
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             'HOSP-001',
-            '前線第一醫院',
+            config.ORG_NAME,
             'FIELD_HOSPITAL',
             'LOCAL',
             'MILITARY',  # 醫院行政單位有軍警管道網路
@@ -976,17 +1050,17 @@ class DatabaseManager:
             'ACTIVE'
         ))
 
-        # 建立當前站點(從 config.STATION_ID 讀取)
-        station_id = getattr(config, 'STATION_ID', 'HC-000000')
+        # v2.0: 建立當前站點(從 config 讀取)
+        station_id = config.get_station_id()
         cursor.execute("""
-            INSERT OR IGNORE INTO stations (
+            INSERT OR REPLACE INTO stations (
                 station_id, station_name, hospital_id, station_type,
                 network_access, operational_status, sync_status
             )
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             station_id,
-            f'醫療站 {station_id}',
+            config.get_station_name(),
             'HOSP-001',
             'SMALL',  # 預設為小站，可後續手動調整為 LARGE
             'NONE',   # 預設無網路
@@ -1003,7 +1077,30 @@ class DatabaseManager:
             WHERE hospital_id = 'HOSP-001'
         """)
 
-        logger.info(f"已初始化預設醫院 HOSP-001 與站點 {station_id}")
+        logger.info(f"✓ 已初始化站點: {station_id} ({config.get_station_name()})")
+
+    def _load_template_data(self, cursor):
+        """根據站點類型載入對應的 Template 資料 - v2.0"""
+        template_path = config.get_template_path()
+
+        if template_path and template_path.exists():
+            logger.info(f"載入 Template: {template_path}")
+            try:
+                with open(template_path, 'r', encoding='utf-8') as f:
+                    template_sql = f.read()
+
+                # 替換站點 ID 佔位符
+                template_sql = template_sql.replace('{{STATION_ID}}', config.get_station_id())
+
+                # 執行 Template SQL
+                cursor.executescript(template_sql)
+                logger.info(f"✓ Template 載入成功: {config.STATION_TYPE}")
+
+            except Exception as e:
+                logger.warning(f"Template 載入失敗: {e}")
+        else:
+            logger.info(f"無 Template 檔案，使用空白資料庫")
+            self._init_default_equipment(cursor)
 
     def generate_item_code(self, category: str) -> str:
         """根據分類自動生成物品代碼"""
@@ -2644,11 +2741,75 @@ async def api_info():
 
 @app.get("/api/health")
 async def health_check():
-    """健康檢查"""
+    """健康檢查 - 包含站點資訊"""
     return {
         "status": "healthy",
         "version": config.VERSION,
+        "station_id": config.get_station_id(),
+        "station_type": config.STATION_TYPE,
         "timestamp": datetime.now().isoformat()
+    }
+
+
+# ========== 站點資訊 API (v2.0 新增) ==========
+
+@app.get("/api/station/info")
+async def get_station_info():
+    """取得當前站點完整資訊 - 前端初始化時呼叫"""
+    return {
+        "station": {
+            "id": config.get_station_id(),
+            "type": config.STATION_TYPE,
+            "type_name": {
+                "HC": "衛生所",
+                "BORP": "備援手術室",
+                "LOG-HUB": "物資中心",
+                "HOSP": "醫院自訂"
+            }.get(config.STATION_TYPE, "站點"),
+            "org": config.STATION_ORG,
+            "number": config.STATION_NUMBER,
+            "name": config.get_station_name()
+        },
+        "organization": {
+            "code": config.ORG_CODE,
+            "name": config.ORG_NAME
+        },
+        "system": {
+            "version": config.VERSION,
+            "timezone": config.TIMEZONE
+        }
+    }
+
+@app.get("/api/station/types")
+async def get_station_types():
+    """取得所有站點類型定義"""
+    return {
+        "types": [
+            {
+                "code": "HC",
+                "name": "衛生所",
+                "name_en": "Health Center",
+                "description": "基礎醫療物資、常用藥品"
+            },
+            {
+                "code": "BORP",
+                "name": "備援手術室",
+                "name_en": "Backup Operating Room Point",
+                "description": "手術耗材、麻醉藥品、手術器械"
+            },
+            {
+                "code": "LOG-HUB",
+                "name": "物資中心",
+                "name_en": "Logistic Hub",
+                "description": "大量物資管理、配送追蹤"
+            },
+            {
+                "code": "HOSP",
+                "name": "醫院自訂",
+                "name_en": "Hospital Custom",
+                "description": "空白模板，由醫院自行設定"
+            }
+        ]
     }
 
 
@@ -4964,10 +5125,10 @@ async def reload_config():
     確保後端使用正確的站點資訊過濾資料
     """
     try:
-        # 重新載入站點 ID
-        config.load_station_id_from_db()
+        # v2.0: 配置在啟動時已載入，無需重新載入
+        # config.load_station_id_from_db()
 
-        logger.info(f"✓ 配置已重新載入，當前站點 ID: {config.STATION_ID}")
+        logger.info(f"✓ 配置已重新載入，當前站點 ID: {config.get_station_id()}")
 
         return {
             "success": True,
@@ -4988,14 +5149,16 @@ async def reload_config():
 # ============================================================================
 
 if __name__ == "__main__":
-    # 從資料庫載入實際的站點 ID
-    config.load_station_id_from_db()
+    # v2.0: 配置在啟動時已從 config file 載入
+    # config.load_station_id_from_db()
 
     print("=" * 70)
     print(f"🏥 醫療站庫存管理系統 API v{config.VERSION}")
     print("=" * 70)
     print(f"📁 資料庫: {config.DATABASE_PATH}")
-    print(f"🏢 站點ID: {config.STATION_ID}")
+    print(f"🏢 站點ID: {config.get_station_id()}")
+    print(f"🏷️  站點名稱: {config.get_station_name()}")
+    print(f"🏥 組織: {config.ORG_NAME}")
     print(f"🌐 服務位址: http://0.0.0.0:8000")
     print(f"📖 API文件: http://localhost:8000/docs")
     print(f"📊 健康檢查: http://localhost:8000/api/health")
