@@ -586,6 +586,7 @@ class DatabaseManager:
                     expiry_date DATE,
                     status TEXT DEFAULT 'AVAILABLE',
                     donor_id TEXT,
+                    donor_info TEXT,
                     batch_number TEXT,
                     remarks TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -594,6 +595,12 @@ class DatabaseManager:
                     CHECK(status IN ('AVAILABLE', 'RESERVED', 'USED', 'EXPIRED', 'DISCARDED'))
                 )
             """)
+
+            # v1.4.2-plus: 確保 donor_info 欄位存在 (支援既有資料庫升級)
+            try:
+                cursor.execute("ALTER TABLE blood_bags ADD COLUMN donor_info TEXT")
+            except:
+                pass  # 欄位已存在則忽略
 
             # 血袋索引
             cursor.execute("""
