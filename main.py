@@ -31,22 +31,6 @@ import uvicorn
 # v1.4.5新增: 緊急功能相關套件
 import qrcode
 from io import BytesIO
-try:
-    import pandas as pd
-    PANDAS_AVAILABLE = True
-except ImportError:
-    PANDAS_AVAILABLE = False
-    logger.warning("Pandas not available, some export features will be limited")
-
-try:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    REPORTLAB_AVAILABLE = True
-except ImportError:
-    REPORTLAB_AVAILABLE = False
-    logger.warning("ReportLab not available, PDF generation will be limited")
 
 
 # ============================================================================
@@ -66,6 +50,27 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 logger = setup_logging()
+
+# ============================================================================
+# 選用套件載入 (需在 logger 初始化後)
+# ============================================================================
+
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    logger.warning("Pandas not available, some export features will be limited")
+
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+    logger.warning("ReportLab not available, PDF generation will be limited")
 
 
 # ============================================================================
