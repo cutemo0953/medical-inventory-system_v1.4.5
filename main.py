@@ -1844,8 +1844,11 @@ class DatabaseManager:
 
                 # v1.4.2-plus: 自動建立個別血袋追蹤記錄
                 from datetime import datetime, timedelta
-                now = datetime.now()
+                import pytz
+                tw_tz = pytz.timezone('Asia/Taipei')
+                now = datetime.now(tw_tz)
                 date_str = now.strftime("%y%m%d")
+                tw_now_str = now.strftime('%Y-%m-%d %H:%M:%S')
 
                 # 血型代碼映射
                 blood_type_codes = {
@@ -1881,8 +1884,8 @@ class DatabaseManager:
                     cursor.execute("""
                         INSERT INTO blood_bags
                         (bag_code, blood_type, volume_ml, collection_date, expiry_date, donor_info, status, created_at)
-                        VALUES (?, ?, 250, ?, ?, ?, 'AVAILABLE', CURRENT_TIMESTAMP)
-                    """, (bag_code, request.bloodType, collection_date, expiry_date, donor_info))
+                        VALUES (?, ?, 250, ?, ?, ?, 'AVAILABLE', ?)
+                    """, (bag_code, request.bloodType, collection_date, expiry_date, donor_info, tw_now_str))
 
                     created_bag_codes.append(bag_code)
 
@@ -1907,11 +1910,23 @@ class DatabaseManager:
                 """, (new_quantity, request.bloodType, request.stationId))
                 event_type = 'CONSUME'
 
+            # 記錄血袋事件 - 使用台灣時區
+            if 'tw_now_str' not in dir():
+                from datetime import datetime
+                import pytz
+                tw_tz = pytz.timezone('Asia/Taipei')
+                tw_now_str = datetime.now(tw_tz).strftime('%Y-%m-%d %H:%M:%S')
+
+            # 入庫時記錄血袋編號
+            remarks = ""
+            if event_type == 'RECEIVE' and created_bag_codes:
+                remarks = f"血袋: {', '.join(created_bag_codes)}"
+
             cursor.execute("""
                 INSERT INTO blood_events
-                (event_type, blood_type, quantity, station_id)
-                VALUES (?, ?, ?, ?)
-            """, (event_type, request.bloodType, request.quantity, request.stationId))
+                (event_type, blood_type, quantity, station_id, remarks, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (event_type, request.bloodType, request.quantity, request.stationId, remarks, tw_now_str))
 
             conn.commit()
             logger.info(f"血袋{action}記錄成功: {request.bloodType} {'+' if action=='receive' else '-'}{request.quantity}U")
@@ -5892,6 +5907,13 @@ async def consume_blood_bags(request: BloodBagConsumeRequest):
 
         consumed_bags = []
         blood_type_counts = {}  # 記錄各血型消耗數量
+        blood_type_bag_codes = {}  # 記錄各血型的血袋編號
+
+        # 取得台灣時區時間
+        from datetime import datetime
+        import pytz
+        tw_tz = pytz.timezone('Asia/Taipei')
+        tw_now = datetime.now(tw_tz).strftime('%Y-%m-%d %H:%M:%S')
 
         for bag_code in request.bagCodes:
             # 檢查血袋是否存在且可用
@@ -5912,9 +5934,9 @@ async def consume_blood_bags(request: BloodBagConsumeRequest):
 
             cursor.execute("""
                 UPDATE blood_bags
-                SET status = 'USED', used_at = CURRENT_TIMESTAMP, used_for = ?
+                SET status = 'USED', used_at = ?, used_for = ?
                 WHERE bag_code = ?
-            """, (used_for, bag_code))
+            """, (tw_now, used_for, bag_code))
 
             consumed_bags.append({
                 "bag_code": bag_code,
@@ -5922,23 +5944,31 @@ async def consume_blood_bags(request: BloodBagConsumeRequest):
                 "volume_ml": bag['volume_ml']
             })
 
-            # 統計各血型消耗數量
+            # 統計各血型消耗數量與血袋編號
             bt = bag['blood_type']
             blood_type_counts[bt] = blood_type_counts.get(bt, 0) + 1
+            if bt not in blood_type_bag_codes:
+                blood_type_bag_codes[bt] = []
+            blood_type_bag_codes[bt].append(bag_code)
 
         # 更新 blood_inventory (減少庫存)
         for blood_type, count in blood_type_counts.items():
             cursor.execute("""
                 UPDATE blood_inventory
-                SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP
+                SET quantity = quantity - ?, last_updated = ?
                 WHERE blood_type = ? AND station_id = ?
-            """, (count, blood_type, request.stationId))
+            """, (count, tw_now, blood_type, request.stationId))
 
-            # 記錄血袋出庫事件
+            # 記錄血袋出庫事件 - 包含具體血袋編號
+            bag_codes_str = ", ".join(blood_type_bag_codes[blood_type])
+            remarks = f"血袋: {bag_codes_str}"
+            if request.purpose:
+                remarks += f" | 用途: {request.purpose}"
+
             cursor.execute("""
-                INSERT INTO blood_events (event_type, blood_type, quantity, station_id, operator, remarks)
-                VALUES ('CONSUME', ?, ?, ?, ?, ?)
-            """, (blood_type, count, request.stationId, request.patientName, request.purpose))
+                INSERT INTO blood_events (event_type, blood_type, quantity, station_id, operator, remarks, timestamp)
+                VALUES ('CONSUME', ?, ?, ?, ?, ?, ?)
+            """, (blood_type, count, request.stationId, request.patientName, remarks, tw_now))
 
         conn.commit()
 
