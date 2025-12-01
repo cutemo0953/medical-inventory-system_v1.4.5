@@ -1207,7 +1207,11 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <template x-for="bag in bloodBags" :key="bag.bag_code">
-                                <tr :class="{'bg-red-50': isExpiringSoon(bag.expiry_date)}">
+                                <tr :class="{
+                                    'bg-red-200 animate-pulse': isExpired(bag.expiry_date) && bag.status === 'AVAILABLE',
+                                    'bg-amber-100': isExpiringSoon(bag.expiry_date) && !isExpired(bag.expiry_date) && bag.status === 'AVAILABLE',
+                                    'bg-gray-50': bag.status === 'USED' || bag.status === 'DISCARDED'
+                                }">
                                     <td class="px-3 py-2">
                                         <input type="checkbox" :value="bag.bag_code" x-model="selectedBagCodes" class="rounded">
                                     </td>
@@ -1216,7 +1220,36 @@
                                         <span class="px-2 py-0.5 text-xs font-bold rounded bg-red-600 text-white" x-text="bag.blood_type"></span>
                                     </td>
                                     <td class="px-3 py-2 text-center" x-text="bag.volume_ml + ' ml'"></td>
-                                    <td class="px-3 py-2 text-xs" :class="isExpiringSoon(bag.expiry_date) ? 'text-red-600 font-bold' : 'text-gray-600'" x-text="bag.expiry_date || '-'"></td>
+                                    <td class="px-3 py-2 text-xs">
+                                        <span :class="{
+                                            'text-red-700 font-bold': isExpired(bag.expiry_date),
+                                            'text-amber-600 font-semibold': isExpiringSoon(bag.expiry_date) && !isExpired(bag.expiry_date),
+                                            'text-gray-600': !isExpiringSoon(bag.expiry_date) && !isExpired(bag.expiry_date)
+                                        }">
+                                            <template x-if="isExpired(bag.expiry_date) && bag.status === 'AVAILABLE'">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    <span>已過期!</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="isExpiringSoon(bag.expiry_date) && !isExpired(bag.expiry_date) && bag.status === 'AVAILABLE'">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    <span x-text="bag.expiry_date"></span>
+                                                </span>
+                                            </template>
+                                            <template x-if="!isExpiringSoon(bag.expiry_date) && !isExpired(bag.expiry_date)">
+                                                <span x-text="bag.expiry_date || '-'"></span>
+                                            </template>
+                                            <template x-if="(isExpiringSoon(bag.expiry_date) || isExpired(bag.expiry_date)) && bag.status !== 'AVAILABLE'">
+                                                <span x-text="bag.expiry_date || '-'"></span>
+                                            </template>
+                                        </span>
+                                    </td>
                                     <td class="px-3 py-2">
                                         <span class="px-2 py-0.5 text-xs font-medium rounded-full"
                                               :class="{
@@ -3941,7 +3974,14 @@
                     const expiry = new Date(expiryDate);
                     const now = new Date();
                     const diffDays = (expiry - now) / (1000 * 60 * 60 * 24);
-                    return diffDays <= 7 && diffDays >= 0;
+                    return diffDays <= 7 && diffDays >= 0;  // 7天內即將過期
+                },
+
+                isExpired(expiryDate) {
+                    if (!expiryDate) return false;
+                    const expiry = new Date(expiryDate);
+                    const now = new Date();
+                    return expiry < now;  // 已過期
                 },
 
                 // ========== 設備管理 ==========

@@ -1797,7 +1797,7 @@ class DatabaseManager:
             conn.close()
     
     def process_blood(self, action: str, request: BloodRequest) -> dict:
-        """血袋處理(支援多站點)"""
+        """血袋處理(支援多站點) - v1.4.2-plus: 入庫時自動建立個別血袋追蹤"""
         conn = self.get_connection()
         cursor = conn.cursor()
 
@@ -1807,6 +1807,8 @@ class DatabaseManager:
                 (request.bloodType, request.stationId)
             )
             blood = cursor.fetchone()
+
+            created_bag_codes = []  # 記錄建立的血袋編號
 
             if action == 'receive':
                 # 入庫：如果記錄不存在則新增
@@ -1825,6 +1827,53 @@ class DatabaseManager:
                         WHERE blood_type = ? AND station_id = ?
                     """, (new_quantity, request.bloodType, request.stationId))
                 event_type = 'RECEIVE'
+
+                # v1.4.2-plus: 自動建立個別血袋追蹤記錄
+                from datetime import datetime, timedelta
+                now = datetime.now()
+                date_str = now.strftime("%y%m%d")
+
+                # 血型代碼映射
+                blood_type_codes = {
+                    'A+': 'AP', 'A-': 'AN', 'B+': 'BP', 'B-': 'BN',
+                    'O+': 'OP', 'O-': 'ON', 'AB+': 'ABP', 'AB-': 'ABN'
+                }
+                bt_code = blood_type_codes.get(request.bloodType, request.bloodType.replace('+', 'P').replace('-', 'N'))
+
+                # 取得當天已有的血袋數量來產生序號
+                cursor.execute("""
+                    SELECT COUNT(*) FROM blood_bags
+                    WHERE bag_code LIKE ?
+                """, (f"BB-{bt_code}-{date_str}-%",))
+                existing_count = cursor.fetchone()[0]
+
+                # 計算效期 (預設7天)
+                expiry_date = (now + timedelta(days=7)).strftime("%Y-%m-%d")
+                collection_date = now.strftime("%Y-%m-%d")
+
+                # 為每袋血建立追蹤記錄
+                for i in range(request.quantity):
+                    seq = existing_count + i + 1
+                    bag_code = f"BB-{bt_code}-{date_str}-{seq:03d}"
+
+                    # 取得來源資訊 (如果有)
+                    source_info = getattr(request, 'source', 'blood_center')
+                    donor_info = ""
+                    if source_info == 'walking_donor':
+                        donor_name = getattr(request, 'donorName', '')
+                        if donor_name:
+                            donor_info = f"WBB: {donor_name}"
+
+                    cursor.execute("""
+                        INSERT INTO blood_bags
+                        (bag_code, blood_type, volume_ml, collection_date, expiry_date, donor_info, status, created_at)
+                        VALUES (?, ?, 250, ?, ?, ?, 'AVAILABLE', CURRENT_TIMESTAMP)
+                    """, (bag_code, request.bloodType, collection_date, expiry_date, donor_info))
+
+                    created_bag_codes.append(bag_code)
+
+                logger.info(f"🩸 建立 {len(created_bag_codes)} 袋血袋追蹤: {created_bag_codes}")
+
             else:
                 # 出庫：記錄必須存在且庫存足夠
                 if not blood:
@@ -1843,22 +1892,29 @@ class DatabaseManager:
                     WHERE blood_type = ? AND station_id = ?
                 """, (new_quantity, request.bloodType, request.stationId))
                 event_type = 'CONSUME'
-            
+
             cursor.execute("""
-                INSERT INTO blood_events 
+                INSERT INTO blood_events
                 (event_type, blood_type, quantity, station_id)
                 VALUES (?, ?, ?, ?)
             """, (event_type, request.bloodType, request.quantity, request.stationId))
-            
+
             conn.commit()
             logger.info(f"血袋{action}記錄成功: {request.bloodType} {'+' if action=='receive' else '-'}{request.quantity}U")
-            
+
             action_text = "入庫" if action == "receive" else "出庫"
-            return {
+            result = {
                 "success": True,
                 "message": f"血袋 {request.bloodType} {action_text} {request.quantity}U 已記錄",
                 "newQuantity": new_quantity
             }
+
+            # 如果有建立血袋，回傳編號
+            if created_bag_codes:
+                result["bag_codes"] = created_bag_codes
+                result["message"] += f" (已建立 {len(created_bag_codes)} 袋追蹤)"
+
+            return result
         
         except HTTPException:
             raise
