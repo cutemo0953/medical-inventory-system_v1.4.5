@@ -2789,11 +2789,9 @@
 
     <script>
         function medicalInventory() {
-            // Safari 兼容性: 檢測瀏覽器並使用適當的 API URL
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-            const apiBaseUrl = isSafari || window.location.hostname === '127.0.0.1'
-                ? 'http://127.0.0.1:8000/api'
-                : 'http://localhost:8000/api';
+            // v1.4.2-plus: 動態偵測 API URL (支援遠端存取)
+            const currentHost = window.location.hostname;
+            const apiBaseUrl = `http://${currentHost}:8000/api`;
 
             return {
                 // 基本設定
