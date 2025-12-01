@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 醫療站庫存管理系統 - 後端 API
-版本: v1.4.1
-新增: 手術記錄管理、匯出功能
+版本: v1.4.2-plus
+新增: 藥品分流管理、血袋標籤列印、政府標準預載資料庫
 """
 
 import logging
@@ -85,8 +85,8 @@ class StationType(str, Enum):
     HOSP = "HOSP"       # Hospital Custom 醫院自訂
 
 class Config:
-    """系統配置 - v2.0 靜態配置架構"""
-    VERSION = "2.0.0"
+    """系統配置 - v1.4.2-plus 穩定單站點架構"""
+    VERSION = "1.4.2-plus"
     DATABASE_PATH = "medical_inventory.db"
     TEMPLATES_PATH = "templates"
 
@@ -522,6 +522,87 @@ class DatabaseManager:
                     CHECK(is_controlled_drug IN (0, 1)),
                     CHECK(is_active IN (0, 1))
                 )
+            """)
+
+            # ========== v1.4.2-plus 新增: 藥品分流管理 ==========
+            # 藥品主檔 (pharmaceuticals) - 獨立於一般耗材
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS pharmaceuticals (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    generic_name TEXT,
+                    unit TEXT DEFAULT 'Tab',
+                    min_stock INTEGER DEFAULT 50,
+                    current_stock INTEGER DEFAULT 0,
+                    category TEXT DEFAULT '常用藥品',
+                    storage_condition TEXT DEFAULT '常溫',
+                    controlled_level TEXT DEFAULT '非管制',
+                    is_active INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CHECK(category IN ('常用藥品', '急救藥品', '麻醉藥品', '管制藥品', '輸液')),
+                    CHECK(storage_condition IN ('常溫', '冷藏', '冷凍')),
+                    CHECK(controlled_level IN ('非管制', '一級', '二級', '三級', '四級')),
+                    CHECK(is_active IN (0, 1))
+                )
+            """)
+
+            # 藥品庫存事件 (pharma_events)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS pharma_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_type TEXT NOT NULL,
+                    pharma_code TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    batch_number TEXT,
+                    expiry_date TEXT,
+                    remarks TEXT,
+                    operator TEXT DEFAULT 'SYSTEM',
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (pharma_code) REFERENCES pharmaceuticals(code),
+                    CHECK(event_type IN ('RECEIVE', 'CONSUME', 'ADJUST', 'EXPIRE'))
+                )
+            """)
+
+            # 藥品索引
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_pharma_category
+                ON pharmaceuticals(category)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_pharma_events_code
+                ON pharma_events(pharma_code, timestamp DESC)
+            """)
+
+            # ========== v1.4.2-plus 新增: 血袋個別追蹤 ==========
+            # 血袋主檔 (blood_bags) - 每袋獨立編號
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS blood_bags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    bag_code TEXT UNIQUE NOT NULL,
+                    blood_type TEXT NOT NULL,
+                    volume_ml INTEGER DEFAULT 250,
+                    collection_date DATE,
+                    expiry_date DATE,
+                    status TEXT DEFAULT 'AVAILABLE',
+                    donor_id TEXT,
+                    batch_number TEXT,
+                    remarks TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    used_at TIMESTAMP,
+                    used_for TEXT,
+                    CHECK(status IN ('AVAILABLE', 'RESERVED', 'USED', 'EXPIRED', 'DISCARDED'))
+                )
+            """)
+
+            # 血袋索引
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_blood_bags_type_status
+                ON blood_bags(blood_type, status)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_blood_bags_expiry
+                ON blood_bags(expiry_date)
             """)
 
             # 庫存事件記錄
@@ -1085,26 +1166,56 @@ class DatabaseManager:
         logger.info(f"✓ 已初始化站點: {station_id} ({config.get_station_name()})")
 
     def _load_template_data(self, cursor):
-        """根據站點類型載入對應的 Template 資料 - v2.0"""
-        template_path = config.get_template_path()
+        """v1.4.2-plus: 統一預載所有藥品/設備/耗材"""
+        try:
+            from preload_data import PHARMACEUTICALS_DATA, EQUIPMENT_DATA, CONSUMABLES_DATA
 
-        if template_path and template_path.exists():
-            logger.info(f"載入 Template: {template_path}")
-            try:
-                with open(template_path, 'r', encoding='utf-8') as f:
-                    template_sql = f.read()
+            # 檢查是否已有藥品資料 (避免重複載入)
+            cursor.execute("SELECT COUNT(*) FROM pharmaceuticals")
+            pharma_count = cursor.fetchone()[0]
 
-                # 替換站點 ID 佔位符
-                template_sql = template_sql.replace('{{STATION_ID}}', config.get_station_id())
+            if pharma_count == 0:
+                logger.info("首次執行，開始預載政府標準資料庫...")
 
-                # 執行 Template SQL
-                cursor.executescript(template_sql)
-                logger.info(f"✓ Template 載入成功: {config.STATION_TYPE}")
+                # 預載藥品
+                for p in PHARMACEUTICALS_DATA:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO pharmaceuticals
+                        (code, name, generic_name, unit, min_stock, current_stock, category, storage_condition, controlled_level)
+                        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+                    """, (p['code'], p['name'], p['generic_name'], p['unit'], p['min_stock'],
+                          p['category'], p['storage_condition'], p['controlled_level']))
 
-            except Exception as e:
-                logger.warning(f"Template 載入失敗: {e}")
-        else:
-            logger.info(f"無 Template 檔案，使用空白資料庫")
+                logger.info(f"✓ 預載 {len(PHARMACEUTICALS_DATA)} 種藥品")
+
+                # 預載設備
+                for e in EQUIPMENT_DATA:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO equipment
+                        (id, name, category, quantity, status)
+                        VALUES (?, ?, ?, ?, 'UNCHECKED')
+                    """, (e['id'], e['name'], e['category'], e['quantity']))
+
+                logger.info(f"✓ 預載 {len(EQUIPMENT_DATA)} 種設備")
+
+                # 預載耗材
+                for c in CONSUMABLES_DATA:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO items
+                        (item_code, item_name, category, unit, min_stock)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (c['code'], c['name'], c['category'], c['unit'], c['min_stock']))
+
+                logger.info(f"✓ 預載 {len(CONSUMABLES_DATA)} 種耗材")
+                logger.info("✓ 政府標準資料庫預載完成")
+            else:
+                logger.info(f"資料庫已存在 {pharma_count} 種藥品，跳過預載")
+
+        except ImportError:
+            logger.warning("preload_data.py 不存在，使用空白資料庫")
+            self._init_default_equipment(cursor)
+        except Exception as e:
+            logger.warning(f"預載資料失敗: {e}")
             self._init_default_equipment(cursor)
 
     def generate_item_code(self, category: str) -> str:
@@ -5147,6 +5258,546 @@ async def reload_config():
             status_code=500,
             detail=f"重新載入配置失敗: {str(e)}"
         )
+
+
+# ============================================================================
+# v1.4.2-plus: 藥品管理 API (Pharmaceuticals)
+# ============================================================================
+
+class PharmaReceiveRequest(BaseModel):
+    """藥品進貨請求"""
+    pharmaCode: str = Field(..., description="藥品代碼", min_length=1)
+    quantity: int = Field(..., gt=0, description="數量必須大於0")
+    batchNumber: Optional[str] = Field(None, description="批號")
+    expiryDate: Optional[str] = Field(None, description="效期 (YYYY-MM-DD)")
+    remarks: Optional[str] = Field(None, description="備註", max_length=500)
+
+
+class PharmaConsumeRequest(BaseModel):
+    """藥品消耗請求"""
+    pharmaCode: str = Field(..., description="藥品代碼", min_length=1)
+    quantity: int = Field(..., gt=0, description="數量必須大於0")
+    purpose: str = Field(..., description="用途說明", min_length=1, max_length=500)
+
+
+@app.get("/api/pharma/list")
+async def get_pharmaceuticals(
+    category: Optional[str] = Query(None, description="分類篩選"),
+    search: Optional[str] = Query(None, description="搜尋關鍵字"),
+    show_inactive: bool = Query(False, description="顯示停用藥品")
+):
+    """取得藥品清單"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        query = """
+            SELECT p.*,
+                   COALESCE(
+                       (SELECT SUM(CASE WHEN event_type IN ('RECEIVE', 'ADJUST') THEN quantity
+                                        WHEN event_type IN ('CONSUME', 'EXPIRE') THEN -quantity END)
+                        FROM pharma_events WHERE pharma_code = p.code), 0
+                   ) + p.current_stock AS calculated_stock
+            FROM pharmaceuticals p
+            WHERE 1=1
+        """
+        params = []
+
+        if not show_inactive:
+            query += " AND p.is_active = 1"
+
+        if category:
+            query += " AND p.category = ?"
+            params.append(category)
+
+        if search:
+            query += " AND (p.code LIKE ? OR p.name LIKE ? OR p.generic_name LIKE ?)"
+            search_term = f"%{search}%"
+            params.extend([search_term, search_term, search_term])
+
+        query += " ORDER BY p.category, p.code"
+
+        cursor.execute(query, params)
+        items = [dict(row) for row in cursor.fetchall()]
+
+        # 統計各分類數量
+        cursor.execute("""
+            SELECT category, COUNT(*) as count
+            FROM pharmaceuticals WHERE is_active = 1
+            GROUP BY category
+        """)
+        category_stats = {row['category']: row['count'] for row in cursor.fetchall()}
+
+        return {
+            "items": items,
+            "count": len(items),
+            "category_stats": category_stats
+        }
+
+    except Exception as e:
+        logger.error(f"查詢藥品失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/api/pharma/receive")
+async def receive_pharmaceutical(request: PharmaReceiveRequest):
+    """藥品進貨"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 檢查藥品是否存在
+        cursor.execute("SELECT * FROM pharmaceuticals WHERE code = ?", (request.pharmaCode,))
+        pharma = cursor.fetchone()
+
+        if not pharma:
+            raise HTTPException(status_code=404, detail=f"藥品 {request.pharmaCode} 不存在")
+
+        # 記錄進貨事件
+        cursor.execute("""
+            INSERT INTO pharma_events (event_type, pharma_code, quantity, batch_number, expiry_date, remarks)
+            VALUES ('RECEIVE', ?, ?, ?, ?, ?)
+        """, (request.pharmaCode, request.quantity, request.batchNumber, request.expiryDate, request.remarks))
+
+        # 更新庫存
+        cursor.execute("""
+            UPDATE pharmaceuticals
+            SET current_stock = current_stock + ?, updated_at = CURRENT_TIMESTAMP
+            WHERE code = ?
+        """, (request.quantity, request.pharmaCode))
+
+        conn.commit()
+
+        logger.info(f"💊 藥品進貨: {pharma['name']} x {request.quantity}")
+
+        return {
+            "success": True,
+            "message": f"進貨成功: {pharma['name']} x {request.quantity} {pharma['unit']}",
+            "pharma_code": request.pharmaCode,
+            "quantity": request.quantity
+        }
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"藥品進貨失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/api/pharma/consume")
+async def consume_pharmaceutical(request: PharmaConsumeRequest):
+    """藥品消耗"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 檢查藥品是否存在
+        cursor.execute("SELECT * FROM pharmaceuticals WHERE code = ?", (request.pharmaCode,))
+        pharma = cursor.fetchone()
+
+        if not pharma:
+            raise HTTPException(status_code=404, detail=f"藥品 {request.pharmaCode} 不存在")
+
+        # 檢查庫存
+        if pharma['current_stock'] < request.quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"庫存不足！{pharma['name']} 目前庫存: {pharma['current_stock']}"
+            )
+
+        # 記錄消耗事件
+        cursor.execute("""
+            INSERT INTO pharma_events (event_type, pharma_code, quantity, remarks)
+            VALUES ('CONSUME', ?, ?, ?)
+        """, (request.pharmaCode, request.quantity, request.purpose))
+
+        # 更新庫存
+        cursor.execute("""
+            UPDATE pharmaceuticals
+            SET current_stock = current_stock - ?, updated_at = CURRENT_TIMESTAMP
+            WHERE code = ?
+        """, (request.quantity, request.pharmaCode))
+
+        conn.commit()
+
+        logger.info(f"💊 藥品消耗: {pharma['name']} x {request.quantity} ({request.purpose})")
+
+        return {
+            "success": True,
+            "message": f"消耗成功: {pharma['name']} x {request.quantity} {pharma['unit']}",
+            "pharma_code": request.pharmaCode,
+            "quantity": request.quantity,
+            "remaining_stock": pharma['current_stock'] - request.quantity
+        }
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"藥品消耗失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.get("/api/pharma/events")
+async def get_pharma_events(
+    pharma_code: Optional[str] = Query(None, description="藥品代碼"),
+    event_type: Optional[str] = Query(None, description="事件類型"),
+    limit: int = Query(100, ge=1, le=500)
+):
+    """查詢藥品事件記錄"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        query = """
+            SELECT pe.*, p.name as pharma_name, p.unit
+            FROM pharma_events pe
+            JOIN pharmaceuticals p ON pe.pharma_code = p.code
+            WHERE 1=1
+        """
+        params = []
+
+        if pharma_code:
+            query += " AND pe.pharma_code = ?"
+            params.append(pharma_code)
+
+        if event_type:
+            query += " AND pe.event_type = ?"
+            params.append(event_type)
+
+        query += " ORDER BY pe.timestamp DESC LIMIT ?"
+        params.append(limit)
+
+        cursor.execute(query, params)
+        events = [dict(row) for row in cursor.fetchall()]
+
+        return {"events": events, "count": len(events)}
+
+    except Exception as e:
+        logger.error(f"查詢藥品事件失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.get("/api/pharma/low-stock")
+async def get_low_stock_pharma():
+    """取得庫存不足的藥品"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT * FROM pharmaceuticals
+            WHERE is_active = 1 AND current_stock < min_stock
+            ORDER BY (current_stock * 1.0 / min_stock) ASC
+        """)
+        items = [dict(row) for row in cursor.fetchall()]
+
+        return {"items": items, "count": len(items)}
+
+    except Exception as e:
+        logger.error(f"查詢低庫存藥品失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+# ============================================================================
+# v1.4.2-plus: 血袋標籤管理 API (Blood Bags)
+# ============================================================================
+
+class BloodBagCreateRequest(BaseModel):
+    """血袋入庫請求"""
+    bloodType: str = Field(..., description="血型")
+    quantity: int = Field(..., gt=0, le=20, description="數量 (1-20)")
+    volumeMl: int = Field(default=250, ge=50, le=500, description="容量 ml")
+    collectionDate: Optional[str] = Field(None, description="採集日期")
+    expiryDate: Optional[str] = Field(None, description="效期")
+    batchNumber: Optional[str] = Field(None, description="批號")
+    remarks: Optional[str] = Field(None, description="備註")
+
+
+class BloodBagUseRequest(BaseModel):
+    """血袋使用請求"""
+    bagCode: str = Field(..., description="血袋編號")
+    usedFor: str = Field(..., description="使用對象/用途", min_length=1)
+
+
+@app.post("/api/blood-bags/create")
+async def create_blood_bags(request: BloodBagCreateRequest):
+    """
+    血袋入庫 - 自動生成獨立編號
+    格式: BB-{血型}-{YYMMDD}-{序號}
+    例如: BB-A+-251201-001
+    """
+    if request.bloodType not in config.BLOOD_TYPES:
+        raise HTTPException(status_code=400, detail=f"無效血型: {request.bloodType}")
+
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        today = datetime.now().strftime("%y%m%d")
+        blood_type_code = request.bloodType.replace('+', 'P').replace('-', 'N')
+
+        # 取得今日該血型最大序號
+        cursor.execute("""
+            SELECT bag_code FROM blood_bags
+            WHERE bag_code LIKE ?
+            ORDER BY bag_code DESC LIMIT 1
+        """, (f"BB-{blood_type_code}-{today}-%",))
+
+        result = cursor.fetchone()
+        if result:
+            last_seq = int(result['bag_code'].split('-')[-1])
+            start_seq = last_seq + 1
+        else:
+            start_seq = 1
+
+        # 計算效期 (預設 35 天)
+        collection_date = request.collectionDate or datetime.now().strftime("%Y-%m-%d")
+        if request.expiryDate:
+            expiry_date = request.expiryDate
+        else:
+            expiry_date = (datetime.strptime(collection_date, "%Y-%m-%d") + timedelta(days=35)).strftime("%Y-%m-%d")
+
+        created_bags = []
+        for i in range(request.quantity):
+            seq = start_seq + i
+            bag_code = f"BB-{blood_type_code}-{today}-{seq:03d}"
+
+            cursor.execute("""
+                INSERT INTO blood_bags
+                (bag_code, blood_type, volume_ml, collection_date, expiry_date, batch_number, remarks)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (bag_code, request.bloodType, request.volumeMl, collection_date,
+                  expiry_date, request.batchNumber, request.remarks))
+
+            created_bags.append({
+                "bag_code": bag_code,
+                "blood_type": request.bloodType,
+                "volume_ml": request.volumeMl,
+                "expiry_date": expiry_date
+            })
+
+        # 同步更新 blood_inventory
+        station_id = config.get_station_id()
+        cursor.execute("""
+            INSERT INTO blood_inventory (blood_type, quantity, station_id)
+            VALUES (?, ?, ?)
+            ON CONFLICT(blood_type, station_id) DO UPDATE SET
+                quantity = quantity + ?,
+                last_updated = CURRENT_TIMESTAMP
+        """, (request.bloodType, request.quantity, station_id, request.quantity))
+
+        conn.commit()
+
+        logger.info(f"🩸 血袋入庫: {request.bloodType} x {request.quantity}U")
+
+        return {
+            "success": True,
+            "message": f"入庫成功: {request.bloodType} x {request.quantity}U",
+            "bags": created_bags,
+            "count": len(created_bags)
+        }
+
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"血袋入庫失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.get("/api/blood-bags/list")
+async def get_blood_bags(
+    blood_type: Optional[str] = Query(None, description="血型篩選"),
+    status: str = Query("AVAILABLE", description="狀態篩選")
+):
+    """取得血袋清單"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        query = "SELECT * FROM blood_bags WHERE status = ?"
+        params = [status]
+
+        if blood_type:
+            query += " AND blood_type = ?"
+            params.append(blood_type)
+
+        query += " ORDER BY expiry_date ASC, created_at ASC"
+
+        cursor.execute(query, params)
+        bags = [dict(row) for row in cursor.fetchall()]
+
+        # 統計各血型數量
+        cursor.execute("""
+            SELECT blood_type, COUNT(*) as count
+            FROM blood_bags WHERE status = 'AVAILABLE'
+            GROUP BY blood_type
+        """)
+        type_stats = {row['blood_type']: row['count'] for row in cursor.fetchall()}
+
+        return {
+            "bags": bags,
+            "count": len(bags),
+            "type_stats": type_stats
+        }
+
+    except Exception as e:
+        logger.error(f"查詢血袋失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/api/blood-bags/use")
+async def use_blood_bag(request: BloodBagUseRequest):
+    """使用血袋"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 檢查血袋是否存在且可用
+        cursor.execute("""
+            SELECT * FROM blood_bags WHERE bag_code = ? AND status = 'AVAILABLE'
+        """, (request.bagCode,))
+        bag = cursor.fetchone()
+
+        if not bag:
+            raise HTTPException(status_code=404, detail=f"血袋 {request.bagCode} 不存在或已使用")
+
+        # 更新血袋狀態
+        cursor.execute("""
+            UPDATE blood_bags
+            SET status = 'USED', used_at = CURRENT_TIMESTAMP, used_for = ?
+            WHERE bag_code = ?
+        """, (request.usedFor, request.bagCode))
+
+        # 同步更新 blood_inventory
+        station_id = config.get_station_id()
+        cursor.execute("""
+            UPDATE blood_inventory
+            SET quantity = quantity - 1, last_updated = CURRENT_TIMESTAMP
+            WHERE blood_type = ? AND station_id = ?
+        """, (bag['blood_type'], station_id))
+
+        # 記錄血袋事件
+        cursor.execute("""
+            INSERT INTO blood_events (event_type, blood_type, quantity, station_id, operator)
+            VALUES ('CONSUME', ?, 1, ?, ?)
+        """, (bag['blood_type'], station_id, request.usedFor))
+
+        conn.commit()
+
+        logger.info(f"🩸 血袋使用: {request.bagCode} -> {request.usedFor}")
+
+        return {
+            "success": True,
+            "message": f"血袋 {request.bagCode} 已標記為已使用",
+            "bag_code": request.bagCode,
+            "blood_type": bag['blood_type'],
+            "used_for": request.usedFor
+        }
+
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"使用血袋失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.get("/api/blood-bags/print-labels/{bag_codes}")
+async def print_blood_bag_labels(bag_codes: str):
+    """
+    生成血袋標籤列印資料
+    bag_codes: 逗號分隔的血袋編號，例如 "BB-AP-251201-001,BB-AP-251201-002"
+    """
+    codes = [c.strip() for c in bag_codes.split(",")]
+
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        placeholders = ",".join(["?" for _ in codes])
+        cursor.execute(f"""
+            SELECT * FROM blood_bags WHERE bag_code IN ({placeholders})
+        """, codes)
+
+        bags = [dict(row) for row in cursor.fetchall()]
+
+        if not bags:
+            raise HTTPException(status_code=404, detail="找不到指定的血袋")
+
+        # 生成標籤資料
+        labels = []
+        for bag in bags:
+            labels.append({
+                "bag_code": bag['bag_code'],
+                "blood_type": bag['blood_type'],
+                "volume_ml": bag['volume_ml'],
+                "collection_date": bag['collection_date'],
+                "expiry_date": bag['expiry_date'],
+                "qr_data": f"MIRS-BLOOD|{bag['bag_code']}|{bag['blood_type']}|{bag['expiry_date']}"
+            })
+
+        return {
+            "labels": labels,
+            "count": len(labels)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"生成標籤失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.get("/api/blood-bags/expiring")
+async def get_expiring_blood_bags(days: int = Query(7, ge=1, le=30)):
+    """取得即將過期的血袋"""
+    conn = db.get_connection()
+    cursor = conn.cursor()
+
+    try:
+        expiry_threshold = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
+
+        cursor.execute("""
+            SELECT * FROM blood_bags
+            WHERE status = 'AVAILABLE' AND expiry_date <= ?
+            ORDER BY expiry_date ASC
+        """, (expiry_threshold,))
+
+        bags = [dict(row) for row in cursor.fetchall()]
+
+        return {
+            "bags": bags,
+            "count": len(bags),
+            "threshold_date": expiry_threshold
+        }
+
+    except Exception as e:
+        logger.error(f"查詢即將過期血袋失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
 
 
 # ============================================================================
