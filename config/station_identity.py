@@ -29,21 +29,21 @@ class StationIdentity:
             'category': 'HEALTH_CENTER'
         },
         'surgical_station': {
-            'prefix': 'SURG',
-            'name': '手術站',
-            'name_en': 'Surgical Station',
+            'prefix': 'BORP',
+            'name': '備援手術室',
+            'name_en': 'Backup Operating Room Point',
             'category': 'SURGICAL_STATION'
         },
         'logistics_hub': {
-            'prefix': 'LOGI',
-            'name': '後勤中樞',
+            'prefix': 'LOG',
+            'name': '物資中心',
             'name_en': 'Logistics Hub',
             'category': 'LOGISTICS_HUB'
         },
         'hospital_custom': {
             'prefix': 'HOSP',
-            'name': '醫療機構',
-            'name_en': 'Hospital',
+            'name': '醫院站',
+            'name_en': 'Hospital Custom',
             'category': 'HOSPITAL'
         }
     }
@@ -51,57 +51,61 @@ class StationIdentity:
     # 反向映射：prefix -> profile
     PREFIX_TO_PROFILE = {
         'HC': 'health_center',
-        'SURG': 'surgical_station',
-        'LOGI': 'logistics_hub',
+        'BORP': 'surgical_station',
+        'LOG': 'logistics_hub',
         'HOSP': 'hospital_custom'
     }
 
     @staticmethod
     def generate_station_id(
         station_type: str,
-        region_code: str = "TW",
-        org_code: Optional[str] = None
+        org_code: str,
+        timestamp: Optional[str] = None,
+        unique_id: Optional[str] = None
     ) -> str:
         """
-        生成全域唯一站點ID
+        生成全域唯一站點ID（混合格式 v2.0）
 
         Args:
             station_type: Profile名稱 (health_center, surgical_station, logistics_hub, hospital_custom)
-            region_code: 區域代碼 (預設 TW)
-            org_code: 組織代碼 (選填，用於區分不同組織)
+            org_code: 組織代碼（必填，例如: VGH, CMUH, DNO）
+            timestamp: 選填，時間戳 YYMMDD（預設為當前日期）
+            unique_id: 選填，唯一識別碼（預設為隨機UUID4前4碼）
 
         Returns:
-            格式化的站點ID
+            格式化的站點ID: TYPE-ORG-YYMMDD-UUID
 
         Examples:
-            >>> StationIdentity.generate_station_id('health_center')
-            'HC-250130-a3f2'
+            >>> StationIdentity.generate_station_id('surgical_station', 'VGH')
+            'BORP-VGH-250201-a3f2'
 
-            >>> StationIdentity.generate_station_id('health_center', org_code='CUTEMO')
-            'CUTEMO-HC-250130-a3f2'
+            >>> StationIdentity.generate_station_id('health_center', 'CMUH')
+            'HC-CMUH-250201-b8f1'
         """
         if station_type not in StationIdentity.STATION_TYPES:
             raise ValueError(f"Invalid station type: {station_type}")
+
+        if not org_code:
+            raise ValueError("org_code is required")
 
         # 取得站點類型前綴
         prefix = StationIdentity.STATION_TYPES[station_type]['prefix']
 
         # 生成時間戳（年月日格式：YYMMDD）
-        timestamp = datetime.now().strftime("%y%m%d")
+        if timestamp is None:
+            timestamp = datetime.now().strftime("%y%m%d")
 
         # 生成唯一識別碼（UUID4 前4碼）
-        unique_id = str(uuid.uuid4())[:4]
+        if unique_id is None:
+            unique_id = str(uuid.uuid4())[:4]
 
-        # 組合站點ID
-        if org_code:
-            return f"{org_code}-{prefix}-{timestamp}-{unique_id}"
-        else:
-            return f"{prefix}-{timestamp}-{unique_id}"
+        # 組合站點ID: TYPE-ORG-YYMMDD-UUID
+        return f"{prefix}-{org_code}-{timestamp}-{unique_id}"
 
     @staticmethod
     def parse_station_id(station_id: str) -> Dict[str, str]:
         """
-        解析站點ID
+        解析站點ID（支援混合格式 v2.0）
 
         Args:
             station_id: 站點ID字串
@@ -110,31 +114,33 @@ class StationIdentity:
             包含解析結果的字典
 
         Examples:
-            >>> StationIdentity.parse_station_id('HC-250130-a3f2')
-            {'prefix': 'HC', 'date': '250130', 'uuid': 'a3f2', 'org_code': None}
+            >>> StationIdentity.parse_station_id('BORP-VGH-250201-a3f2')
+            {'prefix': 'BORP', 'org': 'VGH', 'timestamp': '250201', 'uuid': 'a3f2', 'profile': 'surgical_station'}
 
-            >>> StationIdentity.parse_station_id('CUTEMO-HC-250130-a3f2')
-            {'prefix': 'HC', 'date': '250130', 'uuid': 'a3f2', 'org_code': 'CUTEMO'}
+            >>> StationIdentity.parse_station_id('HC-CMUH-250202-b8f1')
+            {'prefix': 'HC', 'org': 'CMUH', 'timestamp': '250202', 'uuid': 'b8f1', 'profile': 'health_center'}
         """
         parts = station_id.split('-')
 
-        if len(parts) == 3:
-            # 格式: {PREFIX}-{DATE}-{UUID}
+        if len(parts) == 4:
+            # 混合格式 v2.0: TYPE-ORG-YYMMDD-UUID
             return {
                 'prefix': parts[0],
-                'date': parts[1],
-                'uuid': parts[2],
-                'org_code': None,
+                'org': parts[1],
+                'timestamp': parts[2],
+                'uuid': parts[3],
                 'profile': StationIdentity.PREFIX_TO_PROFILE.get(parts[0], 'unknown')
             }
-        elif len(parts) == 4:
-            # 格式: {ORG}-{PREFIX}-{DATE}-{UUID}
+        elif len(parts) == 3:
+            # 舊格式 (向後相容): TYPE-NUMBER
+            # 例如: BORP-VGH-01
             return {
-                'org_code': parts[0],
-                'prefix': parts[1],
-                'date': parts[2],
-                'uuid': parts[3],
-                'profile': StationIdentity.PREFIX_TO_PROFILE.get(parts[1], 'unknown')
+                'prefix': parts[0],
+                'org': parts[1],
+                'number': parts[2],
+                'timestamp': None,
+                'uuid': None,
+                'profile': StationIdentity.PREFIX_TO_PROFILE.get(parts[0], 'unknown')
             }
         else:
             raise ValueError(f"Invalid station ID format: {station_id}")
@@ -204,32 +210,53 @@ class StationIdentity:
 
 # 使用範例
 if __name__ == "__main__":
+    print("=== MIRS v2.0 混合格式 ID 生成器測試 ===\n")
+
+    # 測試組織代碼
+    test_orgs = ['VGH', 'CMUH', 'DNO']
+
     # 生成不同類型的站點ID
-    print("=== 生成站點ID範例 ===")
+    print("【測試 1】生成不同類型站點ID:")
     for profile in StationIdentity.STATION_TYPES.keys():
-        station_id = StationIdentity.generate_station_id(profile)
-        print(f"{profile:20} -> {station_id}")
+        org = test_orgs[list(StationIdentity.STATION_TYPES.keys()).index(profile) % len(test_orgs)]
+        station_id = StationIdentity.generate_station_id(profile, org)
+        print(f"  {profile:20} → {station_id}")
 
-    print("\n=== 帶組織代碼的站點ID ===")
-    station_id_with_org = StationIdentity.generate_station_id('health_center', org_code='CUTEMO')
-    print(f"With org code: {station_id_with_org}")
-
-    print("\n=== 解析站點ID ===")
+    print("\n【測試 2】解析混合格式站點ID:")
     test_ids = [
-        'HC-250130-a3f2',
-        'CUTEMO-HC-250130-a3f2',
-        'SURG-250130-b5e3'
+        'BORP-VGH-250201-a3f2',
+        'HC-CMUH-250202-b8f1',
+        'LOG-DNO-250203-c9e2',
+        'BORP-VGH-01'  # 舊格式 (向後相容)
     ]
     for test_id in test_ids:
-        parsed = StationIdentity.parse_station_id(test_id)
-        print(f"{test_id:30} -> {parsed}")
+        try:
+            parsed = StationIdentity.parse_station_id(test_id)
+            print(f"  {test_id:25} → Type: {parsed['prefix']}, Org: {parsed['org']}, Profile: {parsed['profile']}")
+        except ValueError as e:
+            print(f"  {test_id:25} → ✗ {e}")
 
-    print("\n=== 驗證站點ID ===")
-    valid_id = 'HC-250130-a3f2'
-    invalid_id = 'INVALID-ID'
-    print(f"{valid_id} is valid: {StationIdentity.validate_station_id(valid_id)}")
-    print(f"{invalid_id} is valid: {StationIdentity.validate_station_id(invalid_id)}")
+    print("\n【測試 3】驗證站點ID格式:")
+    validate_ids = [
+        ('BORP-VGH-250201-a3f2', True),
+        ('HC-CMUH-250202-b8f1', True),
+        ('BORP-VGH-01', True),  # 舊格式
+        ('INVALID-ID', False)
+    ]
+    for test_id, expected in validate_ids:
+        result = StationIdentity.validate_station_id(test_id)
+        status = '✓' if result == expected else '✗'
+        print(f"  {status} {test_id:25} → {result}")
 
-    print("\n=== 生成顯示名稱 ===")
-    print(StationIdentity.generate_display_name('HC-250130-a3f2'))
-    print(StationIdentity.generate_display_name('HC-250130-a3f2', '臺北衛生所'))
+    print("\n【測試 4】生成顯示名稱:")
+    display_ids = [
+        ('BORP-VGH-250201-a3f2', None),
+        ('BORP-VGH-250201-a3f2', '榮總備援手術室 01'),
+        ('HC-CMUH-250202-b8f1', '中國醫衛生所')
+    ]
+    for test_id, custom_name in display_ids:
+        display = StationIdentity.generate_display_name(test_id, custom_name)
+        print(f"  {display}")
+
+    print("\n" + "=" * 60)
+    print("測試完成！")

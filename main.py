@@ -32,6 +32,9 @@ import uvicorn
 import qrcode
 from io import BytesIO
 
+# v2.0新增: 站點識別系統
+from config.station_identity import StationIdentity
+
 
 # ============================================================================
 # 日誌配置
@@ -90,38 +93,57 @@ class Config:
     DATABASE_PATH = "medical_inventory.db"
     TEMPLATES_PATH = "templates"
 
-    # ========== 站點配置 (三層結構) ==========
+    # ========== 站點配置 (混合格式 v2.0) ==========
     # TYPE: 決定載入的資料庫 Template
     STATION_TYPE: str = os.getenv("MIRS_STATION_TYPE", "BORP")
 
     # ORG: 機構識別碼
     STATION_ORG: str = os.getenv("MIRS_STATION_ORG", "VGH")
 
-    # NUMBER: 站點編號
-    STATION_NUMBER: str = os.getenv("MIRS_STATION_NUMBER", "01")
+    # TIMESTAMP: 時間戳（YYMMDD格式）
+    STATION_TIMESTAMP: str = os.getenv("MIRS_STATION_TIMESTAMP", "")
 
-    # 組合成完整站點 ID
+    # UUID: 唯一識別碼（4字元）
+    STATION_UUID: str = os.getenv("MIRS_STATION_UUID", "")
+
+    # 組合成完整站點 ID（混合格式: TYPE-ORG-YYMMDD-UUID）
     @classmethod
     def get_station_id(cls) -> str:
-        return f"{cls.STATION_TYPE}-{cls.STATION_ORG}-{cls.STATION_NUMBER}"
+        """生成站點ID - 混合格式 v2.0"""
+        # 如果已有完整的時間戳和UUID，直接組合
+        if cls.STATION_TIMESTAMP and cls.STATION_UUID:
+            return f"{cls.STATION_TYPE}-{cls.STATION_ORG}-{cls.STATION_TIMESTAMP}-{cls.STATION_UUID}"
+
+        # 否則使用 StationIdentity 生成新的ID
+        # TYPE映射到profile
+        type_to_profile = {
+            'HC': 'health_center',
+            'BORP': 'surgical_station',
+            'LOG-HUB': 'logistics_hub',
+            'HOSP': 'hospital_custom'
+        }
+        profile = type_to_profile.get(cls.STATION_TYPE, 'hospital_custom')
+
+        # 生成新ID並更新時間戳和UUID
+        new_id = StationIdentity.generate_station_id(profile, cls.STATION_ORG)
+        parsed = StationIdentity.parse_station_id(new_id)
+        cls.STATION_TIMESTAMP = parsed['timestamp']
+        cls.STATION_UUID = parsed['uuid']
+
+        return new_id
 
     # ========== 站點顯示名稱 ==========
     STATION_NAME: str = os.getenv("MIRS_STATION_NAME", "")
 
     @classmethod
     def get_station_name(cls) -> str:
-        """取得站點顯示名稱，如果未設定則自動生成"""
+        """取得站點顯示名稱，如果未設定則使用 StationIdentity 自動生成"""
         if cls.STATION_NAME:
             return cls.STATION_NAME
 
-        type_names = {
-            "HC": "衛生所",
-            "BORP": "備援手術室",
-            "LOG-HUB": "物資中心",
-            "HOSP": "醫院站"
-        }
-        type_name = type_names.get(cls.STATION_TYPE, "站點")
-        return f"{cls.STATION_ORG} {type_name} {cls.STATION_NUMBER}"
+        # 使用 StationIdentity 生成顯示名稱
+        station_id = cls.get_station_id()
+        return StationIdentity.generate_display_name(station_id, None)
 
     # ========== 組織配置 ==========
     ORG_CODE: str = os.getenv("MIRS_ORG_CODE", "DNO")
@@ -161,12 +183,13 @@ class Config:
                 with open(config_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
 
-                    # 載入站點配置
+                    # 載入站點配置（混合格式 v2.0）
                     if 'station' in data:
                         station = data['station']
                         cls.STATION_TYPE = station.get('type', cls.STATION_TYPE)
                         cls.STATION_ORG = station.get('org', cls.STATION_ORG)
-                        cls.STATION_NUMBER = station.get('number', cls.STATION_NUMBER)
+                        cls.STATION_TIMESTAMP = station.get('timestamp', cls.STATION_TIMESTAMP)
+                        cls.STATION_UUID = station.get('uuid', cls.STATION_UUID)
                         cls.STATION_NAME = station.get('name', cls.STATION_NAME)
 
                     # 載入組織配置
@@ -2772,7 +2795,8 @@ async def get_station_info():
                 "HOSP": "醫院自訂"
             }.get(config.STATION_TYPE, "站點"),
             "org": config.STATION_ORG,
-            "number": config.STATION_NUMBER,
+            "timestamp": config.STATION_TIMESTAMP,
+            "uuid": config.STATION_UUID,
             "name": config.get_station_name()
         },
         "organization": {

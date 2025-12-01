@@ -2528,10 +2528,13 @@
                     dispense: false
                 },
 
-                // 初始化 (v1.4.5優化: 延遲載入)
+                // 初始化 (v2.0: 動態載入站點配置)
                 async init() {
                     this.updateTime();
                     setInterval(() => this.updateTime(), 1000);
+
+                    // v2.0: 從後端載入站點配置
+                    await this.loadStationConfig();
 
                     // 同步所有表單的 stationId
                     this.syncFormStationIds();
@@ -2541,6 +2544,30 @@
 
                     // 根據當前標籤載入對應資料
                     await this.lazyLoadTabData(this.currentTab);
+                },
+
+                // v2.0: 從後端載入站點配置（混合格式）
+                async loadStationConfig() {
+                    try {
+                        const response = await fetch(`${this.apiUrl}/station/info`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.stationId = data.station.id;
+                            this.stationName = data.station.name;
+                            this.stationType = data.station.type;
+
+                            // 保存到 localStorage
+                            localStorage.setItem('stationId', this.stationId);
+                            localStorage.setItem('stationName', this.stationName);
+                            localStorage.setItem('stationType', this.stationType);
+
+                            console.log('✓ 站點配置載入成功:', this.stationId);
+                        } else {
+                            console.warn('無法載入站點配置，使用預設值');
+                        }
+                    } catch (error) {
+                        console.error('載入站點配置失敗:', error);
+                    }
                 },
 
                 // 同步所有表單的 stationId 與當前站點

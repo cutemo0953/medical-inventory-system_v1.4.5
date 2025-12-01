@@ -3,7 +3,8 @@
   "station": {
     "type": "BORP",
     "org": "VGH",
-    "number": "01",
+    "timestamp": "251201",
+    "uuid": "f1d2",
     "name": "榮總備援手術室 01"
   },
   "organization": {
