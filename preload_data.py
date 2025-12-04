@@ -199,31 +199,50 @@ CONSUMABLES_DATA = [
 # ============================================================================
 
 EQUIPMENT_DATA = [
-    # ========== 生命監測設備 ==========
+    # ========== 基礎水電維生設備 (附件五) ==========
     {'id': 'UTIL-001', 'name': '行動電源站', 'category': '電力設備', 'quantity': 1},
-    {'id': 'VITAL-001', 'name': '生理監視器', 'category': '監測設備', 'quantity': 2},
-    {'id': 'VITAL-002', 'name': '血壓計 (電子)', 'category': '監測設備', 'quantity': 3},
-    {'id': 'VITAL-003', 'name': '血氧機', 'category': '監測設備', 'quantity': 5},
-    {'id': 'VITAL-004', 'name': '體溫計 (額溫)', 'category': '監測設備', 'quantity': 5},
-    {'id': 'VITAL-005', 'name': '體溫計 (耳溫)', 'category': '監測設備', 'quantity': 3},
-    {'id': 'VITAL-006', 'name': '血糖機', 'category': '監測設備', 'quantity': 2},
-    {'id': 'VITAL-007', 'name': '心電圖機', 'category': '監測設備', 'quantity': 1},
+    {'id': 'UTIL-002', 'name': '發電機 (備用)', 'category': '電力設備', 'quantity': 1},
+    {'id': 'UTIL-003', 'name': '光觸媒空氣清淨機', 'category': '空氣淨化', 'quantity': 1},
+    {'id': 'UTIL-004', 'name': '淨水器 (RO)', 'category': '水處理', 'quantity': 1},
+    {'id': 'UTIL-005', 'name': '行動冰箱', 'category': '冷藏設備', 'quantity': 2},
+    {'id': 'UTIL-006', 'name': '醫療級冷凍櫃', 'category': '冷藏設備', 'quantity': 1},
+
+    # ========== 一般醫療設備 (附件二) ==========
+    {'id': 'DIAG-001', 'name': '血壓計 (電子式)', 'category': '診斷設備', 'quantity': 3},
+    {'id': 'DIAG-002', 'name': '體溫計 (額溫槍)', 'category': '診斷設備', 'quantity': 5},
+    {'id': 'DIAG-003', 'name': '血氧機 (指夾式)', 'category': '診斷設備', 'quantity': 3},
+    {'id': 'DIAG-004', 'name': '聽診器', 'category': '診斷設備', 'quantity': 3},
+    {'id': 'DIAG-005', 'name': '血糖機', 'category': '診斷設備', 'quantity': 2},
+    {'id': 'DIAG-006', 'name': '12導程心電圖機', 'category': '診斷設備', 'quantity': 1},
 
     # ========== 急救設備 ==========
-    {'id': 'EMER-001', 'name': 'AED', 'category': '急救設備', 'quantity': 2},
-    {'id': 'EMER-002', 'name': '急救推車', 'category': '急救設備', 'quantity': 1},
-    {'id': 'EMER-003', 'name': '甦醒球 (成人)', 'category': '急救設備', 'quantity': 3},
-    {'id': 'EMER-004', 'name': '甦醒球 (小兒)', 'category': '急救設備', 'quantity': 2},
-    {'id': 'EMER-005', 'name': '喉頭鏡組', 'category': '急救設備', 'quantity': 2},
-    {'id': 'EMER-006', 'name': '抽吸機', 'category': '急救設備', 'quantity': 2},
+    {'id': 'EMER-EQ-001', 'name': 'AED 自動體外除顫器', 'category': '急救設備', 'quantity': 1},
+    {'id': 'EMER-EQ-002', 'name': '甦醒球 (成人)', 'category': '急救設備', 'quantity': 2},
+    {'id': 'EMER-EQ-003', 'name': '甦醒球 (兒童)', 'category': '急救設備', 'quantity': 1},
+    {'id': 'EMER-EQ-004', 'name': '喉頭鏡組', 'category': '急救設備', 'quantity': 1},
+    {'id': 'EMER-EQ-005', 'name': '氣管內管組', 'category': '急救設備', 'quantity': 1},
+    {'id': 'EMER-EQ-006', 'name': '氧氣瓶 (E size)', 'category': '急救設備', 'quantity': 2},
+    {'id': 'EMER-EQ-007', 'name': '抽吸機', 'category': '急救設備', 'quantity': 1},
+    {'id': 'EMER-EQ-008', 'name': '脊椎固定板', 'category': '急救設備', 'quantity': 2},
+    {'id': 'EMER-EQ-009', 'name': '頸圈 (各尺寸)', 'category': '急救設備', 'quantity': 5},
 
-    # ========== 手術設備 ==========
-    {'id': 'SURG-001', 'name': '手術燈', 'category': '手術設備', 'quantity': 2},
-    {'id': 'SURG-002', 'name': '手術床', 'category': '手術設備', 'quantity': 1},
-    {'id': 'SURG-003', 'name': '電刀', 'category': '手術設備', 'quantity': 1},
-    {'id': 'SURG-004', 'name': '基本手術器械組', 'category': '手術設備', 'quantity': 3},
-    {'id': 'SURG-005', 'name': '骨科手術器械組', 'category': '手術設備', 'quantity': 2},
-    {'id': 'SURG-006', 'name': '消毒鍋', 'category': '手術設備', 'quantity': 1},
+    # ========== BORP 手術器械包 ==========
+    {'id': 'BORP-SURG-001', 'name': '共同基本包 (一)', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-002', 'name': '共同基本包 (二)', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-003', 'name': '骨科包', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-004', 'name': '開腹輔助包', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-005', 'name': '腹部開創器', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-006', 'name': '開胸基本包', 'category': '手術器械', 'quantity': 1},
+    {'id': 'BORP-SURG-007', 'name': '血管包', 'category': '手術器械', 'quantity': 3},
+    {'id': 'BORP-SURG-008', 'name': '心外基本包', 'category': '手術器械', 'quantity': 4},
+    {'id': 'BORP-SURG-009', 'name': 'ASSET包', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-010', 'name': '皮膚縫合包', 'category': '手術器械', 'quantity': 2},
+    {'id': 'BORP-SURG-011', 'name': '氣切輔助包', 'category': '手術器械', 'quantity': 8},
+    {'id': 'BORP-SURG-012', 'name': 'Bull dog血管夾', 'category': '手術器械', 'quantity': 4},
+    {'id': 'BORP-SURG-013', 'name': '顱骨手搖鑽', 'category': '手術器械', 'quantity': 1},
+    {'id': 'BORP-SURG-014', 'name': '鑽/切骨電動工具組', 'category': '手術器械', 'quantity': 1},
+    {'id': 'BORP-SURG-015', 'name': '電池式電動骨鑽', 'category': '手術器械', 'quantity': 1},
+    {'id': 'BORP-SURG-016', 'name': '電池式電動骨鋸', 'category': '手術器械', 'quantity': 3},
 
     # ========== 呼吸設備 ==========
     {'id': 'RESP-001', 'name': '氧氣鋼瓶', 'category': '呼吸設備', 'quantity': 5},
