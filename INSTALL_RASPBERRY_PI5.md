@@ -143,7 +143,82 @@ python3 main.py
 
 ---
 
-## 第四階段：設定開機自動啟動
+## 第四階段：設定 WiFi 熱點 (AP Mode)
+
+> 讓手機/平板可以直接連到 Pi，不需要外部 WiFi 路由器
+
+### 步驟 1：安裝 NetworkManager (通常已預裝)
+
+```bash
+sudo apt install -y network-manager
+```
+
+### 步驟 2：建立 WiFi 熱點
+
+```bash
+# 建立熱點設定
+sudo nmcli device wifi hotspot ssid "MIRS-BORP01" password "mirs2024"
+```
+
+> 📱 **連線資訊**：
+> - WiFi 名稱: `MIRS-BORP01`
+> - 密碼: `mirs2024`
+> - 系統網址: `http://10.42.0.1:8000`
+
+### 步驟 3：設定開機自動啟動熱點
+
+```bash
+# 查看連線名稱 (通常是 Hotspot)
+nmcli connection show
+
+# 設定自動連線
+sudo nmcli connection modify Hotspot connection.autoconnect yes
+sudo nmcli connection modify Hotspot connection.autoconnect-priority 100
+```
+
+### 步驟 4：測試熱點
+
+```bash
+# 啟動熱點
+sudo nmcli connection up Hotspot
+
+# 確認熱點狀態
+nmcli device status
+```
+
+用手機連接 `MIRS-BORP01` WiFi，然後開啟瀏覽器輸入 `http://10.42.0.1:8000`
+
+### (選用) 自訂熱點名稱和密碼
+
+```bash
+# 修改 WiFi 名稱
+sudo nmcli connection modify Hotspot 802-11-wireless.ssid "你的WiFi名稱"
+
+# 修改密碼
+sudo nmcli connection modify Hotspot wifi-sec.psk "你的新密碼"
+
+# 重新啟動熱點
+sudo nmcli connection down Hotspot
+sudo nmcli connection up Hotspot
+```
+
+### (選用) 同時連接外部 WiFi 和開啟熱點
+
+如果 Pi 有乙太網路或第二張 WiFi 網卡，可以同時：
+- 用乙太網路連接外部網路
+- 用內建 WiFi 開啟熱點給手機連
+
+```bash
+# 確認乙太網路已連接
+nmcli device status
+
+# 啟動熱點 (會使用 WiFi，乙太網路保持外部連線)
+sudo nmcli connection up Hotspot
+```
+
+---
+
+## 第五階段：設定開機自動啟動
 
 ### 步驟 1：建立 systemd 服務
 
