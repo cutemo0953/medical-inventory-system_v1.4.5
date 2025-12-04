@@ -157,7 +157,7 @@ sudo apt install -y network-manager
 
 ```bash
 # 建立熱點設定
-sudo nmcli device wifi hotspot ssid "MIRS-BORP01" password "mirs2024"
+sudo nmcli device wifi hotspot ssid "DNO-HC01" password "mirs2025"
 ```
 
 > 📱 **連線資訊**：
@@ -332,6 +332,69 @@ cp ~/mirs-v1.4.2-plus/medical_inventory.db ~/backup_$(date +%Y%m%d).db
 sudo systemctl start mirs
 ```
 
+### 重置資料庫 (載入最新預設資料)
+
+> ⚠️ **警告**：此操作會清除所有現有資料！請先備份！
+
+```bash
+# 停止服務
+sudo systemctl stop mirs
+
+# 進入目錄
+cd ~/mirs-v1.4.2-plus
+
+# 備份現有資料庫
+cp medical_inventory.db backup_before_reset_$(date +%Y%m%d_%H%M%S).db
+
+# 刪除資料庫 (重啟時會自動重建)
+rm medical_inventory.db
+
+# 重新啟動服務 (會自動載入 preload_data.py 的資料)
+sudo systemctl start mirs
+
+# 確認服務正常運作
+sudo systemctl status mirs
+```
+
+### 手動更新設備資料 (不刪除資料庫)
+
+如果只想更新設備清單，不想刪除其他資料：
+
+```bash
+# 進入目錄並啟動虛擬環境
+cd ~/mirs-v1.4.2-plus
+source venv/bin/activate
+
+# 執行 Python 重載設備
+python3 -c "
+from preload_data import EQUIPMENT_DATA
+import sqlite3
+
+conn = sqlite3.connect('medical_inventory.db')
+cursor = conn.cursor()
+
+# 取得站點 ID
+cursor.execute('SELECT value FROM system_config WHERE key = \"station_id\"')
+row = cursor.fetchone()
+station_id = row[0] if row else 'BORP-01'
+
+# 清除舊設備並重新載入
+cursor.execute('DELETE FROM equipment WHERE station_id = ?', (station_id,))
+for eq in EQUIPMENT_DATA:
+    cursor.execute('''
+        INSERT OR REPLACE INTO equipment (equipment_id, name, category, status, station_id, quantity)
+        VALUES (?, ?, ?, 'PENDING', ?, ?)
+    ''', (eq['id'], eq['name'], eq['category'], station_id, eq['quantity']))
+
+conn.commit()
+conn.close()
+print(f'✅ 已載入 {len(EQUIPMENT_DATA)} 項設備到站點 {station_id}')
+"
+
+# 重新啟動服務
+sudo systemctl restart mirs
+```
+
 ### 查看 IP 位址
 
 ```bash
@@ -438,7 +501,7 @@ sudo systemctl restart mirs
 
 ## 支援
 
-- **GitHub Issues**: https://github.com/paul0728/MIRS/issues
+- **GitHub Issues**: https://github.com/cutemo0953//issues
 - **Email**: tom@denovortho.com
 
 ---
