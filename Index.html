@@ -1443,8 +1443,8 @@
         </div>
 
         <!-- 新增物品 Modal -->
-        <div x-show="showAddItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showAddItemModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showAddItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showAddItemModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 my-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -1498,8 +1498,8 @@
         </div>
 
         <!-- 編輯物品 Modal -->
-        <div x-show="showEditItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showEditItemModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showEditItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showEditItemModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 my-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -1553,8 +1553,8 @@
         </div>
 
         <!-- 新增設備 Modal -->
-        <div x-show="showAddEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showAddEquipmentModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showAddEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showAddEquipmentModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-equipment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -1606,8 +1606,8 @@
         </div>
 
         <!-- 編輯設備 Modal -->
-        <div x-show="showEditEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showEditEquipmentModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showEditEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showEditEquipmentModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-equipment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -1663,8 +1663,8 @@
         </div>
 
         <!-- 設備檢查 Modal -->
-        <div x-show="showCheckEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showCheckEquipmentModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showCheckEquipmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showCheckEquipmentModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-equipment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
@@ -1711,8 +1711,8 @@
         </div>
 
         <!-- 新增處置記錄 Modal -->
-        <div x-show="showAddSurgeryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" style="display: none;">
-            <div @click.away="showAddSurgeryModal = false" class="bg-white rounded-xl shadow-2xl p-4 sm:p-5 md:p-6 max-w-2xl w-full mx-4 my-8">
+        <div x-show="showAddSurgeryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showAddSurgeryModal = false" class="bg-white rounded-xl shadow-2xl p-4 sm:p-5 md:p-6 max-w-2xl w-full mx-4 my-4 max-h-[95vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-treatment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
@@ -1837,8 +1837,8 @@
         </div>
 
         <!-- 處置詳情 Modal -->
-        <div x-show="showSurgeryDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" style="display: none;">
-            <div @click.away="showSurgeryDetailModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 my-8">
+        <div x-show="showSurgeryDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showSurgeryDetailModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 my-4 max-h-[95vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-treatment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
@@ -1933,8 +1933,8 @@
         </div>
 
         <!-- 進貨記錄 Modal -->
-        <div x-show="showReceiveHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" style="display: none;">
-            <div @click.away="showReceiveHistoryModal = false" class="bg-white rounded-xl shadow-2xl p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-4 my-8">
+        <div x-show="showReceiveHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showReceiveHistoryModal = false" class="bg-white rounded-xl shadow-2xl p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-4 my-4 max-h-[95vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <svg class="w-6 h-6 text-teal-custom-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2004,8 +2004,8 @@
         </div>
 
         <!-- 消耗記錄 Modal -->
-        <div x-show="showConsumeHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" style="display: none;">
-            <div @click.away="showConsumeHistoryModal = false" class="bg-white rounded-xl shadow-2xl p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-4 my-8">
+        <div x-show="showConsumeHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showConsumeHistoryModal = false" class="bg-white rounded-xl shadow-2xl p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-4 my-4 max-h-[95vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <svg class="w-6 h-6 text-treatment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2075,8 +2075,8 @@
         </div>
 
         <!-- 消耗詳情 Modal -->
-        <div x-show="showConsumeDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showConsumeDetailModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showConsumeDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showConsumeDetailModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 my-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-treatment-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -2128,8 +2128,8 @@
         </div>
 
         <!-- 血庫歷史記錄 Modal -->
-        <div x-show="showBloodHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" style="display: none;">
-            <div @click.away="showBloodHistoryModal = false" class="bg-white rounded-xl shadow-2xl p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <div x-show="showBloodHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showBloodHistoryModal = false" class="bg-white rounded-xl shadow-2xl p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-4 my-4 max-h-[95vh] overflow-y-auto">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <svg class="w-6 h-6 text-blood-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -2261,8 +2261,8 @@
         </div>
 
         <!-- 緊急功能選單 Modal -->
-        <div x-show="showEmergencyModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showEmergencyModal = false" class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div x-show="showEmergencyModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showEmergencyModal = false" class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 my-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-bold text-red-600 flex items-center gap-2">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2328,8 +2328,8 @@
         </div>
 
         <!-- 緊急領用原因 Modal (MIRS v2.3) -->
-        <div x-show="showEmergencyReasonModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showEmergencyReasonModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
+        <div x-show="showEmergencyReasonModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showEmergencyReasonModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 my-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-dispense-purple-900 flex items-center gap-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2395,8 +2395,8 @@
         </div>
 
         <!-- 藥師審核 Modal (MIRS v2.3) -->
-        <div x-show="showPharmacistApprovalModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" style="display: none;">
-            <div @click.away="showPharmacistApprovalModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
+        <div x-show="showPharmacistApprovalModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showPharmacistApprovalModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 my-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-dispense-purple-900 flex items-center gap-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2481,8 +2481,8 @@
         </div>
 
         <!-- 血袋選擇出庫 Modal (v1.4.2-plus) -->
-        <div x-show="showBloodBagSelectModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 overflow-y-auto" style="display: none;">
-            <div @click.away="showBloodBagSelectModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 my-8">
+        <div x-show="showBloodBagSelectModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-start justify-center z-50 overflow-y-auto py-4" style="display: none;">
+            <div @click.away="showBloodBagSelectModal = false" class="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 my-4 max-h-[95vh] overflow-y-auto">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-red-700 flex items-center gap-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
